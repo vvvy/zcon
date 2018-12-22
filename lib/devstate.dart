@@ -51,6 +51,11 @@ abstract class DevState {
     _dlc.endEditList(result);
     writeConfig(_dlc.makeConfig()).then((_) => parent.setDevState(this));
   }
+  List<ReorderListItem<int>> startEditMaster() => _dlc.startEditMaster();
+  void endEditMaster(List<ReorderListItem<int>> result) {
+    _dlc.endEditMaster(result);
+    writeConfig(_dlc.makeConfig()).then((_) => parent.setDevState(this));
+  }
   DevView getDeviceView(PopupF popupF);
   void flagNeedsUpdate() {
     _updateNeeded = true;

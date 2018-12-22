@@ -215,26 +215,29 @@ class DevListController extends AbstractDevListController {
   @override
   List<ReorderListItem<int>> startEditMaster() {
     final masterComplement = Iterable.generate(_typeNames.length).toSet().difference(_master.toSet());
-    final l = _master.map((i) => ReorderListItem(i, _typeNames[i])).toList();
-    final m = masterComplement.map((i) => ReorderListItem(i, _typeNames[i])).toList();
+    final l = _master.map((i) => ReorderListItem<int>(i, _typeNames[i])).toList();
+    final m = masterComplement.map((i) => ReorderListItem<int>(i, _typeNames[i])).toList();
     return l + [ReorderListItem.sep()] + m;
   }
 
   bool _masterValid(List<int> rv) {
-    var t = rv.toSet().length == rv.length;
+    var t = rv.isNotEmpty;
+    t = t && rv.toSet().length == rv.length;
     t = t && !rv.any((v) => v < 0) && !rv.any((v) => v >= _types.length);
-    t = t && rv.length == _types.length;
     return t;
   }
 
   @override
   void endEditMaster(List<ReorderListItem<int>> result) {
     int sep = result.indexWhere((i) => i.isSeparator);
-    if (sep >= 0) result = result.take(sep);
-    final rv = result.map((rli) => rli.i.id);
-    if (_masterValid(rv))
+    if (sep >= 0) result = result.take(sep).toList();
+    final rv = result.map((rli) => rli.i.id).toList();
+    if (_masterValid(rv)) {
       _master = rv;
-    else
+      if (_master.indexOf(_current) < 0) {
+        _current = _master[0];
+      }
+    } else
       print("Error: endEditMaster: invalid input: $result");
   }
 

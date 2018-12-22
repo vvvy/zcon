@@ -107,14 +107,27 @@ class AppState extends State<MyApp> with DevStateNest {
           items: devState.getAvailableFilters().map((n) => DropdownMenuItem<int>(value: n.id, child: Text(n.name))).toList(),
           onChanged: (s) => devState.setFilter(s)
       ));
+
+      w.add(IconButton(
+          icon: Icon(Icons.sort),
+          onPressed: () => showDialog(
+              context: context,
+              builder: (context) => Reorder<ReorderListItem<int>>(
+                  devState.startEditMaster(),
+                      (s) => s.isSeparator ? null : s.i.name
+              )
+          ).then((vs) { if (vs != null) devState.endEditMaster(vs); })
+      ));
     }
+
     w.add(IconButton(icon: Icon(Icons.settings), onPressed: () {
               return readSettings().then((s) => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => Preferences(s)),
-              )).then((s) => writeSettings(s))
+              )).then((s) { if (s != null) writeSettings(s); })
                   .then((_) => reload());
             }));
+
     w.add(IconButton(
         icon: Icon(Icons.refresh),
         //TODO somewhat better e.g. animation
