@@ -36,7 +36,6 @@ class AppState extends State<MyApp> with DevStateNest {
   final _biggerFont = const TextStyle(fontSize: 18.0);
   final _smallerFont = const TextStyle(fontSize: 12.0);
 
-
   String _formatUpdateTime(int time) {
     final now = DateTime.now();
     final then = DateTime.fromMillisecondsSinceEpoch(time * 1000);
@@ -120,13 +119,29 @@ class AppState extends State<MyApp> with DevStateNest {
       ));
     }
 
-    w.add(IconButton(icon: Icon(Icons.settings), onPressed: () {
-              return readSettings().then((s) => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => Preferences(s)),
-              )).then((s) { if (s != null) writeSettings(s); })
-                  .then((_) => reload());
-            }));
+    w.add(IconButton(
+        icon: Icon(Icons.settings),
+        onPressed: () =>
+            readSettings().then(
+              (s) =>
+                showDialog(
+                  context: context,
+                  builder: (context) => Preferences(s)
+                )
+            ).then(
+              (s) { if (s != null) writeSettings(s); }
+            ).then(
+              (_) => reload()
+            )
+    ));
+
+    //w.add(IconButton(icon: Icon(Icons.settings), onPressed: () {
+    //  return readSettings().then((s) => Navigator.push(
+    //    context,
+    //    MaterialPageRoute(builder: (context) => Preferences(s)),
+    //  )).then((s) { if (s != null) writeSettings(s); })
+    //      .then((_) => reload());
+    //}));
 
     w.add(IconButton(
         icon: Icon(Icons.refresh),
@@ -143,7 +158,7 @@ class AppState extends State<MyApp> with DevStateNest {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'My Smart Home',
+      title: "Z-Way Console",
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),

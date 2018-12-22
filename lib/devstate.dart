@@ -23,8 +23,7 @@ class DevViewEmpty extends DevView {
 
 //------------------------------------------------------------------------------
 //TODO move these to settings
-const intervalMainS = 60;
-const intervalErrorRetryS = 60;
+
 const maxErrorRetries = 5;
 
 abstract class DevStateNest {
@@ -42,7 +41,9 @@ abstract class DevState {
   List<IdName<int>> getAvailableFilters() => _dlc.master;
   void setFilter(int current) {
     _dlc.current = current;
-    parent.setDevState(this);
+    //TODO move _current under separate persistence key
+    // (so we don't write entire config when moving between views)
+    writeConfig(_dlc.makeConfig()).then((_) => parent.setDevState(this));
   }
   bool get listsOnline => _dlc.isOnline;
   bool get isListEditable => _dlc.isListEditable;
@@ -106,42 +107,41 @@ class DevStateNonEmpty extends DevState {
     print("Starting incremental update");
     _isLoading = true;
     parent.setDevState(this);
-    //_devicesF =
-    readSettings()
-        .then((s) => fetch<Devices>(s, "?since=${_devices.updateTime}"))
-        .then((ds) {
-      print("Incremental update ok, n=${ds.devices.length}");
-      //popup("Incremental update ok, n=${ds.devices.length}");
-      _isLoading = false;
-      _errorCount = 0;
-      _devices = _devices.merge(ds);
-      _dlc.applyDevices(_devices.devices, rebuildHint: _devices.structureChanged);
-      parent.setDevState(this);
-      _setTimer();
-    }).catchError((err) {
-      print("Incremental update failed, err=$err");
-      _isLoading = false;
-      if (_errorCount == maxErrorRetries) {
-        parent.setDevState(DevStateEmpty(this, error: err.toString()));
-      } else {
-        if (_errorCount == 0)
-          popup("Communications error (will retry soon): $err");
-        _errorCount += 1;
+
+    fetch<Devices>("?since=${_devices.updateTime}")
+      .then((ds) {
+        print("Incremental update ok, n=${ds.devices.length}");
+        _isLoading = false;
+        _errorCount = 0;
+        _devices = _devices.merge(ds);
+        _dlc.applyDevices(_devices.devices, rebuildHint: _devices.structureChanged);
+        parent.setDevState(this);
         _setTimer();
-      }
-    });
+      }).catchError((err) {
+        print("Incremental update failed, err=$err");
+        _isLoading = false;
+        if (_errorCount == maxErrorRetries) {
+          parent.setDevState(DevStateEmpty(this, error: err.toString()));
+        } else {
+          if (_errorCount == 0)
+            popup("Communications error (will retry soon): $err");
+          _errorCount += 1;
+          _setTimer();
+        }
+      });
   }
 
-  void _setTimer() {
+  void _setTimer() async {
     if (_devRefreshT != null)
       _devRefreshT.cancel();
+    Settings settings = await readSettings();
     int s;
     if (_updateNeeded)
-      s = 1;
+      s = settings.intervalUpdateS;
     else if (_errorCount == 0)
-      s = intervalMainS;
+      s = settings.intervalMainS;
     else
-      s = intervalErrorRetryS;
+      s = settings.intervalErrorRetryS;
     _updateNeeded = false;
     _devRefreshT = new Timer(Duration(seconds: s), () => _devUpdate());
   }
@@ -184,21 +184,18 @@ class DevStateEmpty extends DevState {
       _isLoading = true;
       parent.setDevState(this);
       readConfig().then((ls) => _dlc.parseConfig(ls));
-      devicesF = readSettings()
-          .then((s) => fetch<Devices>(s, ""))
-          .then((ds) {
-        print("Full update ok, n=${ds.devices.length}");
-        _isLoading = false;
-        error = null;
-        parent.setDevState(
-            DevStateNonEmpty(this, devices: ds)
-        );
-      }).catchError((err) {
-        print("Full update failed, err=$err");
-        _isLoading = false;
-        error = err.toString();
-        parent.setDevState(this);
-      });
+      devicesF = fetch<Devices>("")
+        .then((ds) {
+          print("Full update ok, n=${ds.devices.length}");
+          _isLoading = false;
+          error = null;
+          parent.setDevState(DevStateNonEmpty(this, devices: ds));
+        }).catchError((err) {
+          print("Full update failed, err=$err");
+          _isLoading = false;
+          error = err.toString();
+          parent.setDevState(this);
+        });
     }
   }
 

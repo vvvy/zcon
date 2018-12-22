@@ -12,13 +12,25 @@ Future<void> writeConfig(List<String> configRaw) async {
   prefs.setStringList("config", configRaw);
 }
 
+const _intervalMainS = 60;
+const _intervalErrorRetryS = 60;
+const _intervalUpdateS = 5;
 
 class Settings {
-  String url;
-  String username;
-  String password;
+  final String url;
+  final String username;
+  final String password;
 
-  Settings({this.url, this.username, this.password});
+  final int intervalMainS;
+  final int intervalErrorRetryS;
+  final int intervalUpdateS;
+
+  Settings({
+    this.url, this.username, this.password,
+    this.intervalMainS: _intervalMainS,
+    this.intervalErrorRetryS: _intervalErrorRetryS,
+    this.intervalUpdateS: _intervalUpdateS
+  });
 }
 
 Future<Settings> readSettings() async {
@@ -26,7 +38,10 @@ Future<Settings> readSettings() async {
   return Settings(
       url: prefs.getString('url') ?? "",
       username: prefs.getString('username') ?? "",
-      password: prefs.getString('password') ?? ""
+      password: prefs.getString('password') ?? "",
+      intervalMainS: prefs.getInt('intervalMainS') ?? _intervalMainS,
+      intervalErrorRetryS: prefs.getInt('intervalErrorRetryS') ?? _intervalErrorRetryS,
+      intervalUpdateS: prefs.getInt('intervalUpdateS') ?? _intervalUpdateS
   );
 }
 
@@ -35,6 +50,9 @@ Future<void> writeSettings(Settings settings) async {
   await prefs.setString('url', settings.url);
   await prefs.setString('username', settings.username);
   await prefs.setString('password', settings.password);
+  await prefs.setInt('intervalMainS', settings.intervalMainS);
+  await prefs.setInt('intervalErrorRetryS', settings.intervalErrorRetryS);
+  await prefs.setInt('intervalUpdateS', settings.intervalUpdateS);
 }
 
 class Preferences extends StatefulWidget {
@@ -54,7 +72,8 @@ class PreferencesState extends State<Preferences> {
   TextEditingController
       cUsername = TextEditingController(),
       cPassword = TextEditingController(),
-      cUrl = TextEditingController();
+      cUrl = TextEditingController(),
+      cIntervalMainS = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
 
@@ -66,14 +85,17 @@ class PreferencesState extends State<Preferences> {
     cUrl.text = initSettings.url;
     cUsername.text = initSettings.username;
     cPassword.text = initSettings.password;
+    cIntervalMainS.text = initSettings.intervalMainS.toString();
   }
+
+  static const _boldFont = TextStyle(fontWeight: FontWeight.bold);
 
   @override
   Widget build(BuildContext context) {
     // Build a Form widget using the _formKey we created above
     return Form(
         key: _formKey,
-        child: Dialog(
+        child: SingleChildScrollView(child: Dialog(
           child:
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -108,13 +130,33 @@ class PreferencesState extends State<Preferences> {
                     },
                     obscureText: true,
                   ),
+                  Divider(),
+                  Text("Advanced", style: _boldFont),
+                  Text("Update interval, seconds"),
+                  TextFormField(
+                    autovalidate: true,
+                    controller: cIntervalMainS,
+                    validator: (value) {
+                      var iv = int.tryParse(value);
+                      var t = iv != null;
+                      t = t && iv >= 5;
+                      if (!t) {
+                        return 'Must be an int >= 5';
+                      }
+                    },
+                  ),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
                     child: RaisedButton(
                       child: Text('Submit'),
                       onPressed: () {
                         if (_formKey.currentState.validate()) {
-                          Navigator.pop(context, Settings(url: cUrl.text, username: cUsername.text, password: cPassword.text));
+                          Navigator.pop(context, Settings(
+                              url: cUrl.text,
+                              username: cUsername.text,
+                              password: cPassword.text,
+                              intervalMainS: int.tryParse(cIntervalMainS.text) ?? _intervalMainS
+                          ));
                         }
                       },
                     ),
@@ -129,126 +171,7 @@ class PreferencesState extends State<Preferences> {
                 ],
               )
             ),
-        )
+        ))
     );
   }
-
-  /*
-  @override
-  Widget build(BuildContext context) {
-    // Build a Form widget using the _formKey we created above
-    return Form(
-      key: _formKey,
-      child: SimpleDialog(
-        contentPadding: EdgeInsets.all(16.0),
-        children: <Widget>[
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text("URL"),
-              TextFormField(
-                controller: cUrl,
-                validator: (value) {
-                  if (value.isEmpty) {
-                    return 'Please enter some text';
-                  }
-                },
-              ),
-              Text("Username"),
-              TextFormField(
-                controller: cUsername,
-                validator: (value) {
-                  if (value.isEmpty) {
-                    return 'Please enter some text';
-                  }
-                },
-              ),
-              Text("Password"),
-              TextFormField(
-                controller: cPassword,
-                validator: (value) {
-                  if (value.isEmpty) {
-                    return 'Please enter some text';
-                  }
-                },
-                obscureText: true,
-              )
-            ]
-          ),
-          SimpleDialogOption(
-            child: Text('Submit'),
-            onPressed: () {
-              if (_formKey.currentState.validate()) {
-                Navigator.pop(context, Settings(url: cUrl.text, username: cUsername.text, password: cPassword.text));
-              }
-            },
-          ),
-          SimpleDialogOption(
-            child: Text('Cancel'),
-            onPressed: () {
-              Navigator.pop(context, null);
-            }
-          )
-        ],
-      ),
-    );
-  }
-*/
-
-
-  /*
-  @override
-  Widget build(BuildContext context) {
-    // Build a Form widget using the _formKey we created above
-    return Form(
-      key: _formKey,
-      child: Dialog(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text("URL"),
-            TextFormField(
-              controller: cUrl,
-              validator: (value) {
-                if (value.isEmpty) {
-                  return 'Please enter some text';
-                }
-              },
-            ),
-            Text("Username"),
-            TextFormField(
-              controller: cUsername,
-              validator: (value) {
-                if (value.isEmpty) {
-                  return 'Please enter some text';
-                }
-              },
-            ),
-            Text("Password"),
-            TextFormField(
-              controller: cPassword,
-              validator: (value) {
-                if (value.isEmpty) {
-                  return 'Please enter some text';
-                }
-              },
-              obscureText: true,
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16.0),
-              child: RaisedButton(
-                onPressed: () {
-                   if (_formKey.currentState.validate()) {
-                    Navigator.pop(context, Settings(url: cUrl.text, username: cUsername.text, password: cPassword.text));
-                  }
-                },
-                child: Text('Submit'),
-              ),
-            ),
-          ],
-        ),
-      )
-    );
-  }
-  */
 }
