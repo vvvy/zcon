@@ -48,20 +48,25 @@ class AppState extends State<MyApp> with DevStateNest {
   }
 
   Widget _buildRow(Device d, BuildContext context) {
+    NV nv = nvc.getNV(d, (s) => Scaffold.of(context).showSnackBar(SnackBar(content: Text(s))));
+
+    Widget trailing = (nv) {
+      if (nv is NVShow) {
+        return Text(nv.value, style: _biggerFont);
+      } else if (nv is NVPushButton) {
+        return IconButton(icon: Icon(Icons.launch), onPressed: () => nv.onPressed());
+      } else if (nv is NVSwitch) {
+        return Switch(value: nv.value, onChanged: (v) => nv.onToggle(v));
+      } else {
+        return Text("?");
+      }
+    } (nv);
+
     return ListTile(
       title: Text(d.metrics.title, style: _biggerFont),
       subtitle: Text(_formatUpdateTime(d.updateTime), style: _smallerFont),
-      trailing: (NV nv) {
-        if (nv is NVShow) {
-          return Text(nv.value, style: _biggerFont);
-        } else if (nv is NVPushButton) {
-          return IconButton(icon: Icon(Icons.launch), onPressed: () => nv.onPressed());
-        } else if (nv is NVSwitch) {
-          return Switch(value: nv.value, onChanged: (v) => nv.onToggle(v));
-        } else {
-          return  Text("?");
-        }
-      } (nvc.getNV(d, (s) => Scaffold.of(context).showSnackBar(SnackBar(content: Text(s)))))
+      onLongPress: () { if(nv is NVUpdate) nv.onUpdate(); },
+      trailing: trailing
     );
   }
 
@@ -121,18 +126,22 @@ class AppState extends State<MyApp> with DevStateNest {
 
     w.add(IconButton(
         icon: Icon(Icons.settings),
-        onPressed: () =>
+        onPressed: () async {
+          final orig = await readSettings();
+          final edited = await showDialog(context: context, builder: (context) => Preferences(orig));
+          if (edited != null) {
+            await writeSettings(edited);
+            reload();
+          }
+        }
+        /*() =>
             readSettings().then(
-              (s) =>
-                showDialog(
-                  context: context,
-                  builder: (context) => Preferences(s)
-                )
+              (s) => showDialog(context: context, builder: (context) => Preferences(s))
             ).then(
               (s) { if (s != null) writeSettings(s); }
             ).then(
               (_) => reload()
-            )
+            )*/
     ));
 
     //w.add(IconButton(icon: Icon(Icons.settings), onPressed: () {

@@ -173,6 +173,23 @@ Future<T> fetch<T>(String p) async {
   if (settings.username != "")
     client.addCredentials(uri, "",
         new HttpClientBasicCredentials(settings.username, settings.password));
+
+  /*
+  final request = await client.getUrl(uri);
+  final response = await request.close();
+  if (response.statusCode == 200) {
+    // If the call to the server was successful, parse the JSON
+    final jsonS = await response.transform(utf8.decoder).join(" ");
+    var zr = ZAResponse<T>.fromJson(json.decode(jsonS));
+    if (zr.code != 200)
+      return Future<T>.error("ZA app error: " + zr.message);
+    //print("ZR data: " +(zr.data as Device).metrics.level.toString());
+    return Future<T>.value(zr.data);
+  } else {
+    // If that call was not successful, throw an error.
+    return Future<T>.error('Failed to process ZA response: ' + response.statusCode.toString());
+  }
+  */
   final response = await client.getUrl(
       uri
   ).then((HttpClientRequest request) =>
