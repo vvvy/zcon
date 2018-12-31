@@ -178,6 +178,12 @@ class DevStateEmpty extends DevState {
     Future.microtask(() => _init());
   }
 
+  DevStateEmpty.init2(DevState origin):
+        error = null,
+        super.clone(origin) {
+    Future.microtask(() => _init());
+  }
+
   void _init() {
     if (error == null) {
       print("Starting full update");

@@ -9,14 +9,36 @@ import 'reorder.dart';
 
 void main() => runApp(MyApp());
 
-class AppState extends State<MyApp> with DevStateNest {
+class AppState extends State<MyApp> with WidgetsBindingObserver implements DevStateNest {
   DevState devState;
   NVController nvc = NVController();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     reload();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    print("AppLifecycleState: $state");
+    switch (state) {
+      case AppLifecycleState.paused:
+        setDevState(DevStateEmpty(this.devState, error: "Application paused"));
+        break;
+      case AppLifecycleState.resumed:
+        setDevState(DevStateEmpty.init(this));
+        break;
+      default:
+        break;
+    }
   }
 
   @override
@@ -48,24 +70,27 @@ class AppState extends State<MyApp> with DevStateNest {
   }
 
   Widget _buildRow(Device d, BuildContext context) {
-    NV nv = nvc.getNV(d, (s) => Scaffold.of(context).showSnackBar(SnackBar(content: Text(s))));
+    String title = d.metrics.title;
+    NV nv = nvc.getNV(d);
+    var notF = (String s) => Scaffold.of(context).showSnackBar(SnackBar(content: Text(s)));
+    var errorF = (String s) => notF("Error: $s");
 
     Widget trailing = (nv) {
       if (nv is NVShow) {
         return Text(nv.value, style: _biggerFont);
       } else if (nv is NVPushButton) {
-        return IconButton(icon: Icon(Icons.launch), onPressed: () => nv.onPressed());
+        return IconButton(icon: Icon(Icons.launch), onPressed: () { notF("Activating $title"); nv.onPressed(errorF); });
       } else if (nv is NVSwitch) {
-        return Switch(value: nv.value, onChanged: (v) => nv.onToggle(v));
+        return Switch(value: nv.value, onChanged: (v) { notF("Setting $title ${v?'on':'off'}"); nv.onToggle(v, errorF); });
       } else {
         return Text("?");
       }
     } (nv);
 
     return ListTile(
-      title: Text(d.metrics.title, style: _biggerFont),
+      title: Text(title, style: _biggerFont),
       subtitle: Text(_formatUpdateTime(d.updateTime), style: _smallerFont),
-      onLongPress: () { if(nv is NVUpdate) nv.onUpdate(); },
+      onLongPress: () { if(nv is NVUpdate) { notF("Updating $title"); nv.onUpdate(errorF); } },
       trailing: trailing
     );
   }
