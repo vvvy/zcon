@@ -62,6 +62,7 @@ class ReorderState<T> extends State<Reorder<T>> {
   }
 
   final _biggerFont = const TextStyle(fontSize: 18.0);
+  final _smallerFont = const TextStyle(fontSize: 10.0);
 
   final _dropDecor = BoxDecoration(border: Border.all(color: Colors.blue, width: 1.0));
   final _dropDecorHi = BoxDecoration(border: Border.all(color: Colors.red, width: 3.0));
@@ -80,6 +81,7 @@ class ReorderState<T> extends State<Reorder<T>> {
           child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text("Drag and drop to reorder. Long press on an item to start dragging. Drop below the separator to hide and vice versa. Drop to panels to move to top/bottom.", style: _smallerFont),
                 DragTarget<int>(
                     builder: (c, x, y) => _dropPanel(x.isNotEmpty, "To top"),
                     onWillAccept: (x) { _set(x, 0); return true; },

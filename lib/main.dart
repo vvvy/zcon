@@ -118,34 +118,30 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
 
   List<Widget> _appBarActions(BuildContext context) {
     final w = <Widget>[];
-    if (devState.listsOnline) {
-      if (devState.isListEditable)
-        w.add(IconButton(
-            icon: Icon(Icons.filter_list),
-            onPressed: () => showDialog(
-                context: context,
-                builder: (context) => Reorder<ReorderListItem<String>>(
-                    devState.startEditList(),
-                    (s) => s.isSeparator ? null : s.i.name
-                )
-            ).then((vs) { if (vs != null) devState.endEditList(vs); })
-        ));
 
+    FVC viewEditor = devState.listsOnline && devState.isListEditable ? (context) => showDialog(
+        context: context,
+        builder: (context) => Reorder<ReorderListItem<String>>(
+            devState.startEditList(),
+                (s) => s.isSeparator ? null : s.i.name
+        )
+    ).then((vs) { if (vs != null) devState.endEditList(vs); })
+        : null;
+
+    FVC masterEditor = devState.listsOnline ? (context) => showDialog(
+        context: context,
+        builder: (context) => Reorder<ReorderListItem<int>>(
+            devState.startEditMaster(),
+                (s) => s.isSeparator ? null : s.i.name
+        )
+    ).then((vs) { if (vs != null) devState.endEditMaster(vs); })
+        : null;
+
+    if (devState.listsOnline) {
       w.add(DropdownButton<int>(
           value: devState.getFilter(),
           items: devState.getAvailableFilters().map((n) => DropdownMenuItem<int>(value: n.id, child: Text(n.name))).toList(),
           onChanged: (s) => devState.setFilter(s)
-      ));
-
-      w.add(IconButton(
-          icon: Icon(Icons.sort),
-          onPressed: () => showDialog(
-              context: context,
-              builder: (context) => Reorder<ReorderListItem<int>>(
-                  devState.startEditMaster(),
-                      (s) => s.isSeparator ? null : s.i.name
-              )
-          ).then((vs) { if (vs != null) devState.endEditMaster(vs); })
       ));
     }
 
@@ -153,20 +149,12 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
         icon: Icon(Icons.settings),
         onPressed: () async {
           final orig = await readSettings();
-          final edited = await showDialog(context: context, builder: (context) => Preferences(orig));
+          final edited = await showDialog(context: context, builder: (context) => Preferences(orig, masterEditor, viewEditor));
           if (edited != null) {
             await writeSettings(edited);
             reload();
           }
         }
-        /*() =>
-            readSettings().then(
-              (s) => showDialog(context: context, builder: (context) => Preferences(s))
-            ).then(
-              (s) { if (s != null) writeSettings(s); }
-            ).then(
-              (_) => reload()
-            )*/
     ));
 
     //w.add(IconButton(icon: Icon(Icons.settings), onPressed: () {

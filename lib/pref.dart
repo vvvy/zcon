@@ -55,19 +55,26 @@ Future<void> writeSettings(Settings settings) async {
   await prefs.setInt('intervalUpdateS', settings.intervalUpdateS);
 }
 
+typedef Future<void> FVC(BuildContext context);
+
 class Preferences extends StatefulWidget {
-  final Settings initSettings;
+  final Settings _initSettings;
+  final FVC _masterEditor, _viewEditor;
 
   @override
   PreferencesState createState() {
-    return PreferencesState(initSettings);
+    return PreferencesState(_initSettings, _masterEditor, _viewEditor);
   }
 
-  Preferences(Settings settings): initSettings = settings;
+  Preferences(Settings settings, FVC masterEditor, FVC viewEditor):
+        _initSettings = settings,
+        _masterEditor = masterEditor,
+        _viewEditor = viewEditor;
 }
 
 class PreferencesState extends State<Preferences> {
   final Settings initSettings;
+  final FVC _masterEditor, _viewEditor;
 
   TextEditingController
       cUsername = TextEditingController(),
@@ -77,7 +84,10 @@ class PreferencesState extends State<Preferences> {
 
   final _formKey = GlobalKey<FormState>();
 
-  PreferencesState(Settings settings): initSettings = settings;
+  PreferencesState(Settings settings, FVC masterEditor, FVC viewEditor):
+        initSettings = settings,
+        _masterEditor = masterEditor,
+        _viewEditor = viewEditor;
 
   @override
   void initState() {
@@ -92,6 +102,101 @@ class PreferencesState extends State<Preferences> {
 
   @override
   Widget build(BuildContext context) {
+    final header = <Widget>[
+      Text("URL"),
+      TextFormField(
+        controller: cUrl,
+        validator: (value) {
+          if (value.isEmpty) {
+            return 'Please enter some text';
+          }
+        },
+      ),
+      Text("Username"),
+      TextFormField(
+        controller: cUsername,
+        validator: (value) {
+          if (value.isEmpty) {
+            return 'Please enter some text';
+          }
+        },
+      ),
+      Text("Password"),
+      TextFormField(
+        controller: cPassword,
+        validator: (value) {
+          if (value.isEmpty) {
+            return 'Please enter some text';
+          }
+        },
+        obscureText: true,
+      ),
+    ];
+
+    final footer = <Widget>[
+      Divider(),
+      Text("Advanced", style: _boldFont),
+      Text("Update interval, seconds"),
+      TextFormField(
+        autovalidate: true,
+        controller: cIntervalMainS,
+        validator: (value) {
+          var iv = int.tryParse(value);
+          var t = iv != null;
+          t = t && iv >= 5;
+          if (!t) {
+            return 'Must be an int >= 5';
+          }
+        },
+      ),
+      Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0),
+          child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                FlatButton(
+                  child: Text('Cancel'),
+                  onPressed: () => Navigator.pop(context, null),
+                ),
+                FlatButton(
+                  child: Text('Submit'),
+                  onPressed: () {
+                    if (_formKey.currentState.validate()) {
+                      Navigator.pop(context, Settings(
+                          url: cUrl.text,
+                          username: cUsername.text,
+                          password: cPassword.text,
+                          intervalMainS: int.tryParse(cIntervalMainS.text) ?? _intervalMainS
+                      ));
+                    }
+                  },
+                ),
+              ]
+          )
+      )
+    ];
+
+    final view = (_masterEditor != null || _viewEditor != null) ?
+        <Widget>[
+          Divider(),
+          Text("View settings", style: _boldFont),
+          Row(children: (
+              _masterEditor != null ?
+                <Widget>[RaisedButton(child: Text("Edit view list"), onPressed: () => _masterEditor(context))]
+                  :
+                <Widget>[]
+            ) + (
+              _viewEditor != null ?
+              <Widget>[RaisedButton(child: Text("Edit current view"), onPressed: () => _viewEditor(context))]
+                  :
+              <Widget>[]
+          ))
+        ]
+        :
+        <Widget>[];
+
+    final children = header + view + footer;
+
     // Build a Form widget using the _formKey we created above
     return Form(
         key: _formKey,
@@ -101,74 +206,7 @@ class PreferencesState extends State<Preferences> {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text("URL"),
-                  TextFormField(
-                    controller: cUrl,
-                    validator: (value) {
-                      if (value.isEmpty) {
-                        return 'Please enter some text';
-                      }
-                    },
-                  ),
-                  Text("Username"),
-                  TextFormField(
-                    controller: cUsername,
-                    validator: (value) {
-                      if (value.isEmpty) {
-                        return 'Please enter some text';
-                      }
-                    },
-                  ),
-                  Text("Password"),
-                  TextFormField(
-                    controller: cPassword,
-                    validator: (value) {
-                      if (value.isEmpty) {
-                        return 'Please enter some text';
-                      }
-                    },
-                    obscureText: true,
-                  ),
-                  Divider(),
-                  Text("Advanced", style: _boldFont),
-                  Text("Update interval, seconds"),
-                  TextFormField(
-                    autovalidate: true,
-                    controller: cIntervalMainS,
-                    validator: (value) {
-                      var iv = int.tryParse(value);
-                      var t = iv != null;
-                      t = t && iv >= 5;
-                      if (!t) {
-                        return 'Must be an int >= 5';
-                      }
-                    },
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16.0),
-                    child: RaisedButton(
-                      child: Text('Submit'),
-                      onPressed: () {
-                        if (_formKey.currentState.validate()) {
-                          Navigator.pop(context, Settings(
-                              url: cUrl.text,
-                              username: cUsername.text,
-                              password: cPassword.text,
-                              intervalMainS: int.tryParse(cIntervalMainS.text) ?? _intervalMainS
-                          ));
-                        }
-                      },
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16.0),
-                    child: RaisedButton(
-                      child: Text('Cancel'),
-                      onPressed: () => Navigator.pop(context, null),
-                    ),
-                  ),
-                ],
+                children: children
               )
             ),
         ))

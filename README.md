@@ -12,3 +12,8 @@ Mobile Z-Way console
 flutter build apk --release
 ```
 The resulting APK is in `./build/app/outputs/apk/release/app-release.apk`
+
+## Application icon attribution
+
+Icons made by [Freepik](https://www.freepik.com/) from [www.flaticon.com](https://www.flaticon.com/) 
+is licensed by [Creative Commons BY 3.0](http://creativecommons.org/licenses/by/3.0/)

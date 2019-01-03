@@ -7,7 +7,7 @@ description: Mobile Z-Way console
 # Both the version and the builder number may be overridden in flutter
 # build by specifying --build-name and --build-number, respectively.
 # Read more about versioning at semver.org.
-version: 1.0.1+2
+version: 1.0.2+3
 
 environment:
   sdk: ">=2.0.0-dev.68.0 <3.0.0"
@@ -26,6 +26,15 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  flutter_launcher_icons: "^0.7.0"
+
+# Running the icon handler
+# flutter packages get
+# flutter packages pub run flutter_launcher_icons:main
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/lamp.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://www.dartlang.org/tools/pub/pubspec
