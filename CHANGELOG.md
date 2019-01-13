@@ -2,7 +2,6 @@
 
 ## TODO
 
-* Thermostat setpoint editor
 * Custom names for custom views
 * Handle visibility and permanently_hidden device attributes
 * Handle rooms (http://zway-server:8083/ZAutomation/api/v1/locations) and dashboard
@@ -16,6 +15,7 @@
 ## Version 1.0.3+4
 
 * Avatars and icons in the list view
+* Thermostat setpoint editor
 
 ## Version 1.0.2+3
 

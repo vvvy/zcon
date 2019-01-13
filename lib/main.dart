@@ -6,6 +6,7 @@ import 'devlist.dart';
 import 'nv.dart';
 import 'reorder.dart';
 import 'davatar.dart';
+import 'getvalue.dart';
 
 
 void main() => runApp(MyApp());
@@ -70,7 +71,6 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
     return "${diffSec}s ago";
   }
 
-
   Widget _buildRow(Device d, BuildContext context) {
     String title = d.metrics.title;
     NV nv = nvc.getNV(d);
@@ -84,6 +84,16 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
         return IconButton(icon: Icon(Icons.launch), onPressed: () { notF("Activating $title"); nv.onPressed(errorF); });
       } else if (nv is NVSwitch) {
         return Switch(value: nv.value, onChanged: (v) { notF("Setting $title ${v?'on':'off'}"); nv.onToggle(v, errorF); });
+      } else if (nv is NVFloat) {
+        return FlatButton(child: Text(nv.title), onPressed: () =>
+          showDialog(
+            context: context,
+            builder: (context) => GetFloat(nv.value)
+          ).then((v) { if (v != null) {
+            notF("Setting level of $title to $v");
+            nv.onSet(v, errorF);
+          }})
+        );
       } else {
         return Text("?");
       }

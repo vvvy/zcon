@@ -45,15 +45,27 @@ class NVPushButton extends NV {
 
 class NVFloat extends NVUpdate {
   final double value;
+  final String title;
   void onSet(double newV, ErrorF errorF) {
     _nvc.exec(_devId, "command", "exact?level=$newV", errorF);
   }
-  NVFloat(NVController nvc, String devId, double value): value = value, super(nvc, devId);
+  NVFloat(NVController nvc, String devId, String title, double value): title = title, value = value, super(nvc, devId);
 }
 
 class NVShow extends NVUpdate {
   final String value;
   NVShow(NVController nvc, String devId, String value): value = value, super(nvc, devId);
+}
+
+double asDouble(dynamic v) {
+  if (v is double)
+    return v;
+  else if (v is int)
+    return v.toDouble();
+  else if (v is String)
+    return double.tryParse(v);
+  else
+    return null;
 }
 
 class NVController {
@@ -67,9 +79,10 @@ class NVController {
         return NVPushButton(this, d.id);
       case "switchBinary":
         return NVSwitch(this, d.id, d.metrics.level.toString());
-      default:
-        return NVShow(this, d.id, d.metrics.level.toString() + nvl(d.metrics.scaleTitle, ""));
+      case "thermostat":
+        return NVFloat(this, d.id, d.metrics.level.toString() + nvl(d.metrics.scaleTitle, ""), asDouble(d.metrics.level));
     }
+    return NVShow(this, d.id, d.metrics.level.toString() + nvl(d.metrics.scaleTitle, ""));
   }
 
   void exec(String c0, String c1, String c2, ErrorF errorF) {
