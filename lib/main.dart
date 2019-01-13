@@ -5,6 +5,7 @@ import 'devstate.dart';
 import 'devlist.dart';
 import 'nv.dart';
 import 'reorder.dart';
+import 'davatar.dart';
 
 
 void main() => runApp(MyApp());
@@ -69,6 +70,7 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
     return "${diffSec}s ago";
   }
 
+
   Widget _buildRow(Device d, BuildContext context) {
     String title = d.metrics.title;
     NV nv = nvc.getNV(d);
@@ -89,13 +91,14 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
 
     return ListTile(
       title: Text(title, style: _biggerFont),
+      leading: avatar(d),
       subtitle: Text(_formatUpdateTime(d.updateTime), style: _smallerFont),
       onLongPress: () { if(nv is NVUpdate) { notF("Updating $title"); nv.onUpdate(errorF); } },
       trailing: trailing
     );
   }
 
-  Widget buildMainView(BuildContext context) {
+  Widget _buildMainView(BuildContext context) {
     var v = devState.getDeviceView((s) => Scaffold.of(context).showSnackBar(SnackBar(content: Text(s))));
     if (v is DevViewFull) {
       //print("@buildMainView");
@@ -192,7 +195,7 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
             ),
             body: Center(
                 child: Builder(builder: (context) {
-                  return buildMainView(context);
+                  return _buildMainView(context);
                 })
             ),
           )
