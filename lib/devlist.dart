@@ -166,6 +166,7 @@ class DevListController extends AbstractDevListController {
     "Thermostats": DevListTypeIndex(f: deviceTypeFilter("thermostat")),
     "Scene": DevListTypeIndex(f: deviceTypeFilter("toggleButton")),
     "Switches": DevListTypeIndex(f: deviceTypeFilter("switchBinary")),
+    "Blinds": DevListTypeIndex(f: deviceAndProbeTypeFilter("switchMultilevel", "motor")),
     "Battery": DevListTypeIndex(f: deviceTypeFilter("battery")),
     "Failed": DevListTypeIndex(f: (d) => d.metrics.isFailed == true),
     "Custom1": DevListTypeIdList(),
@@ -204,7 +205,7 @@ class DevListController extends AbstractDevListController {
   @override
   set current(int current) {
     if (_master.indexOf(current) < 0)
-      print("setPos: Error: ivalid current=$current on master=$_master");
+      print("setPos: Error: invalid current=$current on master=$_master");
     else
       _current = current;
   }

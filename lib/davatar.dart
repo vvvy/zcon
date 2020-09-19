@@ -1,8 +1,19 @@
+//Note on custom icons:
+//1. Go to https://www.fluttericon.com/
+//2. Upload either config.json (recommended) or svg sources from assets/custom_icons
+//3. Specify CustomIcons as a class name
+//4. Download
+//5. move fonts/CustomIcons.ttf from the downloaded archive to fonts/
+//6. move config.json from the downloaded archive to assets/custom_icons
+//7. move custom_icons_icons.dart from the downloaded archive to lib/
+//8. edit custom_icons_icons.dart, add String type annotation to _kFontPkg
+//9. use icons as e.g. CustomIcons.wb_25
+
 import 'package:flutter/material.dart';
 import 'pdu.dart';
+import 'custom_icons_icons.dart';
 
 enum AColor { neutral, green, yellow, red }
-
 
 Widget _colorAvatar(Widget child, AColor color) {
   switch (color) {
@@ -46,8 +57,27 @@ Widget _battery(dynamic level) {
   return _colorAvatar(Icon(Icons.battery_unknown), AColor.neutral);
 }
 
+Widget _windowBlind(dynamic level) {
+  //return _colorAvatar(Icon(CustomIcons.wb_unknown), AColor.red);
+  if (!(level is double || level is int))
+    return _colorAvatar(Icon(CustomIcons.wb_unknown), AColor.red);
+  level = level.toInt();
+  if (level == 0)
+    return _colorAvatar(Icon(CustomIcons.wb_00), AColor.neutral);
+  if (level <= 25)
+    return _colorAvatar(Icon(CustomIcons.wb_25), AColor.yellow);
+  if (level <= 50)
+    return _colorAvatar(Icon(CustomIcons.wb_50), AColor.yellow);
+  if (level <= 75)
+    return _colorAvatar(Icon(CustomIcons.wb_75), AColor.yellow);
+  if (level <= 100 || level == 255)
+    return _colorAvatar(Icon(CustomIcons.wb_99), AColor.yellow);
+  return _colorAvatar(Icon(CustomIcons.wb_unknown), AColor.red);
+}
+
+
 final _avatarMap = {
-  "battery": (l) => _battery(l),
+  "battery": _battery,
   "switchBinary":[Icon(Icons.lightbulb_outline)],
   "thermostat/thermostat_set_point":[Text("T"), (l) => _fromRange(l, 18, 18, AColor.neutral, AColor.neutral, AColor.green)],
 
@@ -67,6 +97,8 @@ final _avatarMap = {
   "sensorBinary":[Icon(Icons.hdr_strong)],
 
   "sensorDiscrete":[Icon(Icons.menu)],
+
+  "switchMultilevel/motor": _windowBlind,
 
   /*
   "sensorBinary/alarm_heat":[Text("sensorBinary/alarm_heat"), AColor.neutral],

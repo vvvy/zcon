@@ -84,15 +84,25 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
         return IconButton(icon: Icon(Icons.launch), onPressed: () { notF("Activating $title"); nv.onPressed(errorF); });
       } else if (nv is NVSwitch) {
         return Switch(value: nv.value, onChanged: (v) { notF("Setting $title ${v?'on':'off'}"); nv.onToggle(v, errorF); });
-      } else if (nv is NVFloat) {
+      } else if (nv is NVThermostatSetPoint) {
         return FlatButton(child: Text(nv.title), onPressed: () =>
           showDialog(
             context: context,
-            builder: (context) => GetFloat(nv.value)
+            builder: (context) => GetThermostatSetPoint(nv.value)
           ).then((v) { if (v != null) {
             notF("Setting level of $title to $v");
             nv.onSet(v, errorF);
           }})
+        );
+      } else if (nv is NVSwitchMultilevel) {
+        return FlatButton(child: Text(nv.title), onPressed: () =>
+            showDialog(
+                context: context,
+                builder: (context) => GetSwitchMultilevel(nv.value)
+            ).then((v) { if (v != null) {
+              notF("Setting level of $title to $v");
+              nv.onSet(v, errorF);
+            }})
         );
       } else {
         return Text("?");
