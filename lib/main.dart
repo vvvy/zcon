@@ -139,9 +139,7 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
     }
   }
 
-  List<Widget> _appBarActions(BuildContext context) {
-    final w = <Widget>[];
-
+  void _editSettings(BuildContext context) async {
     FVC viewEditor = devState.listsOnline && devState.isListEditable ? (context) => showDialog(
         context: context,
         builder: (context) => Reorder<ReorderListItem<String>>(
@@ -160,6 +158,29 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
     ).then((vs) { if (vs != null) devState.endEditMaster(vs); })
         : null;
 
+
+    final orig = await readSettings();
+    final edited = await showDialog(context: context, builder: (context) => Preferences(orig, masterEditor, viewEditor));
+    if (edited != null) {
+      await writeSettings(edited);
+      reload();
+    }
+  }
+
+
+  List<Widget> _appBarActions(BuildContext context) {
+    final w = <Widget>[];
+
+    List<Alert> alerts = devState.alerts;
+    if (alerts.isNotEmpty) {
+      int i = alerts.map((a) => a.filterId).reduce((a, b) => a > b ? a : b);
+      w.add(IconButton(
+        icon: Icon(Icons.warning, color: Colors.yellow),
+        tooltip: alerts.map((a) => a.text).join("\n"),
+        onPressed: (i >= 0) ? () => devState.setFilter(i) : null,
+      ));
+    }
+
     if (devState.listsOnline) {
       w.add(DropdownButton<int>(
           value: devState.getFilter(),
@@ -170,23 +191,8 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
 
     w.add(IconButton(
         icon: Icon(Icons.settings),
-        onPressed: () async {
-          final orig = await readSettings();
-          final edited = await showDialog(context: context, builder: (context) => Preferences(orig, masterEditor, viewEditor));
-          if (edited != null) {
-            await writeSettings(edited);
-            reload();
-          }
-        }
+        onPressed: () async { _editSettings(context); }
     ));
-
-    //w.add(IconButton(icon: Icon(Icons.settings), onPressed: () {
-    //  return readSettings().then((s) => Navigator.push(
-    //    context,
-    //    MaterialPageRoute(builder: (context) => Preferences(s)),
-    //  )).then((s) { if (s != null) writeSettings(s); })
-    //      .then((_) => reload());
-    //}));
 
     w.add(IconButton(
         icon: Icon(Icons.refresh),
@@ -202,6 +208,24 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
 
   @override
   Widget build(BuildContext context) {
+
+    List<Widget> addAlerts(BuildContext context, List<Widget> l) {
+      List<Alert> alerts = devState.alerts;
+      if (alerts.isNotEmpty) {
+        l.add(Divider());
+        for (Alert a in alerts)
+          l.add(ListTile(
+            leading: Icon(Icons.warning, color: Colors.yellow),
+            title: Text(a.text),
+            onTap: () {
+              if (a.filterId >= 0) devState.setFilter(a.filterId);
+              Navigator.pop(context);
+            },
+          ));
+      }
+      return l;
+    }
+
     return MaterialApp(
       title: "Z-Way Console",
       theme: ThemeData(
@@ -209,6 +233,39 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
       ),
       home: Builder(builder: (context) =>
           Scaffold(
+            //-------------
+            drawer:Drawer(
+                child: ListView(
+                  // Important: Remove any padding from the ListView.
+                  padding: EdgeInsets.zero,
+                  children: addAlerts(context, <Widget>[
+                    DrawerHeader(
+                      child: Text('Z-Way Console (ZCon)', textScaleFactor: 1.5, style: TextStyle(color: Colors.white)),
+                      decoration: BoxDecoration(
+                        color: Colors.blue,
+                        image: const DecorationImage(image: AssetImage("assets/icon/lamp.png"))
+                      ),
+                    ),
+                    ListTile(
+                      leading: Icon(Icons.refresh),
+                      title: Text('Refresh'),
+                      onTap: () {
+                        reload();
+                        Navigator.pop(context);
+                      },
+                    ),
+                    ListTile(
+                      leading: Icon(Icons.settings),
+                      title: Text('Settings'),
+                      onTap: () {
+                        _editSettings(context);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ]),
+                )
+            ),
+            //------------------------------
             appBar: AppBar(
               title: Text("ZCon"),
               actions: _appBarActions(context)

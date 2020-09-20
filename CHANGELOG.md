@@ -7,16 +7,19 @@
 * Handle visibility and permanently_hidden device attributes
 * Handle rooms (http://zway-server:8083/ZAutomation/api/v1/locations) and dashboard
 * Better Reload icon in appbar (animated)
+* Add Status to Drawer (?)
+
+
+ 
+## Version 1.0.4+5
+
+* Added support for window blinds (SwitchMultilevel + motor)
 * Add Drawer with status
 * Add Alarms to Drawer view
  - Battery low
  - Failed devices
  - T below 5C
  
-## Version 1.0.4+5
-
-* Added support for window blinds (SwitchMultilevel + motor)
-
 ## Version 1.0.3+4
 
 * Avatars and icons in the list view

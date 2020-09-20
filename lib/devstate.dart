@@ -2,6 +2,7 @@ import 'dart:async';
 import 'pdu.dart';
 import 'pref.dart';
 import 'devlist.dart';
+import 'constants.dart';
 
 //------------------------------------------------------------------------------
 
@@ -22,9 +23,51 @@ class DevViewEmpty extends DevView {
 }
 
 //------------------------------------------------------------------------------
-//TODO move these to settings
 
-const maxErrorRetries = 5;
+class Alert {
+  final String text;
+  final int filterId;
+  Alert({String text, int filterId = -1}): text = text, filterId = filterId;
+}
+
+class AlertBuilder {
+  List<Alert> _alerts;
+  final int _failedFilterId;
+  final int _batteryFilterId;
+  final int _temperatureFilterId;
+  AlertBuilder({int failedFilterId, int batteryFilterId, int temperatureFilterId}):
+        _alerts = [],
+        _batteryFilterId = batteryFilterId,
+        _failedFilterId = failedFilterId,
+        _temperatureFilterId = temperatureFilterId;
+
+  void processDevices(List<Device> devices) {
+    int failedCount = 0;
+    int batteryCount = 0;
+    int temperatureCount = 0;
+    for (Device device in devices) {
+      if (device.deviceType == "battery" && device.metrics.level < Constants.batteryAlertLevel)
+        batteryCount += 1;
+
+      if (device.deviceType == "sensorMultilevel" && device.probeType == "temperature") {
+        if (device.metrics.level < Constants.tempLoBound || device.metrics.level > Constants.tempHiBound)
+          temperatureCount += 1;
+      }
+
+      if (device.metrics != null && device.metrics.isFailed != null && device.metrics.isFailed)
+        failedCount += 1;
+    }
+    _alerts = [];
+    if (temperatureCount > 0)
+      _alerts.add(Alert(text: '$temperatureCount: temperature', filterId: _temperatureFilterId));
+    if (failedCount > 0)
+      _alerts.add(Alert(text: '$failedCount: failed', filterId: _failedFilterId));
+    if (batteryCount > 0)
+      _alerts.add(Alert(text: '$batteryCount: battery', filterId: _batteryFilterId));
+  }
+
+  List<Alert> get alertList => _alerts;
+}
 
 abstract class DevStateNest {
   void setDevState(DevState state);
@@ -35,6 +78,7 @@ abstract class DevState {
   bool _isLoading;
   bool _updateNeeded;
   DevListController _dlc;
+  AlertBuilder _alertBuilder;
 
   bool get isLoading => _isLoading;
   int getFilter() => _dlc.current;
@@ -58,6 +102,7 @@ abstract class DevState {
     writeConfig(_dlc.makeConfig()).then((_) => parent.setDevState(this));
   }
   DevView getDeviceView(PopupF popupF);
+  List<Alert> get alerts => _alertBuilder.alertList;
   void flagNeedsUpdate() {
     _updateNeeded = true;
     tryUpdateNow();
@@ -68,12 +113,18 @@ abstract class DevState {
         parent = parent,
         _isLoading = isLoading,
         _updateNeeded = updateNeeded,
+        _alertBuilder = AlertBuilder(
+            failedFilterId: DevListController.getTypeId("Failed"),
+            batteryFilterId: DevListController.getTypeId("Battery"),
+            temperatureFilterId: DevListController.getTypeId("Temperature")
+        ),
         _dlc = new DevListController();
 
   DevState.clone(DevState prev):
         parent = prev.parent,
         _isLoading = prev._isLoading,
         _updateNeeded = prev._updateNeeded,
+        _alertBuilder = prev._alertBuilder,
         _dlc = prev._dlc;
 }
 
@@ -84,9 +135,11 @@ class DevStateNonEmpty extends DevState {
   int _errorCount;
   PopupF _popupF;
 
+
   DevStateNonEmpty(DevState origin, {Devices devices}):
         _devices = devices,
-        super.clone(origin) {
+        super.clone(origin)
+  {
     _dlc.applyDevices(devices.devices, rebuildHint: true);
     Future.microtask(() => _init());
   }
@@ -114,13 +167,14 @@ class DevStateNonEmpty extends DevState {
         _isLoading = false;
         _errorCount = 0;
         _devices = _devices.merge(ds);
+        _alertBuilder.processDevices(_devices.devices);
         _dlc.applyDevices(_devices.devices, rebuildHint: _devices.structureChanged);
         parent.setDevState(this);
         _setTimer();
       }).catchError((err) {
         print("Incremental update failed, err=$err");
         _isLoading = false;
-        if (_errorCount == maxErrorRetries) {
+        if (_errorCount == Constants.maxErrorRetries) {
           parent.setDevState(DevStateEmpty(this, error: err.toString()));
         } else {
           if (_errorCount == 0)
@@ -195,6 +249,7 @@ class DevStateEmpty extends DevState {
           print("Full update ok, n=${ds.devices.length}");
           _isLoading = false;
           error = null;
+          _alertBuilder.processDevices(ds.devices);
           parent.setDevState(DevStateNonEmpty(this, devices: ds));
         }).catchError((err) {
           print("Full update failed, err=$err");

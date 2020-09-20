@@ -145,6 +145,7 @@ abstract class AbstractDevListController {
   DevList get list;
   List<ReorderListItem<String>> startEditList();
   void endEditList(List<ReorderListItem<String>> result);
+  //int getTypeId(String t);
 }
 
 enum _S {
@@ -158,9 +159,8 @@ enum _S {
   err
 }
 
-
 class DevListController extends AbstractDevListController {
-  static Map<String, DevListType> _typeMap() => {
+  static final Map<String, DevListType> _typeMap = {
     "All": DevListTypeIdentity(),
     "Temperature": DevListTypeIndex(f: deviceAndProbeTypeFilter("sensorMultilevel", "temperature")),
     "Thermostats": DevListTypeIndex(f: deviceTypeFilter("thermostat")),
@@ -176,8 +176,9 @@ class DevListController extends AbstractDevListController {
     "Custom5": DevListTypeIdList(),
   };
 
-  List<DevListType> _types;
-  List<String> _typeNames;
+  static final List<String> _typeNames = _typeMap.keys.toList(growable: false);
+  static final List<DevListType> _types = _typeMap.values.toList(growable: false);
+
   List<int> _generations;
   int _generation;
   List<int> _master;
@@ -186,12 +187,11 @@ class DevListController extends AbstractDevListController {
   List<Device> _devices;
 
   DevListController() {
-    final typeMap = _typeMap();
-    _typeNames = typeMap.keys.toList(growable: false);
-    _types = typeMap.values.toList(growable: false);
     _generations = Iterable.generate(_types.length, (_) => 0).toList(growable: false);
     _generation = 0;
   }
+
+  static int getTypeId(String t) => DevListController._typeNames.indexOf(t);
 
   @override
   bool get isOnline => _master != null && _devices != null;
