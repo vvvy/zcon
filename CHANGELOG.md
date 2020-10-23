@@ -7,18 +7,20 @@
 * Handle visibility and permanently_hidden device attributes
 * Handle rooms (http://zway-server:8083/ZAutomation/api/v1/locations) and dashboard
 * Better Reload icon in appbar (animated)
+* Add FCM support (compatible with ZWay)
 * Add Status to Drawer (?)
+* i18n, Russian strings
 
 
  
 ## Version 1.0.4+5
 
 * Added support for window blinds (SwitchMultilevel + motor)
-* Add Drawer with status
+* Add Drawer
 * Add Alarms to Drawer view
  - Battery low
  - Failed devices
- - T below 5C
+ - T below 5C and above 30C
  
 ## Version 1.0.3+4
 
