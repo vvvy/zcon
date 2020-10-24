@@ -3,6 +3,7 @@
 ## TODO
 
 * Fix request abort on view change
+* Export/import settings
 * Custom names for custom views
 * Handle visibility and permanently_hidden device attributes
 * Handle rooms (http://zway-server:8083/ZAutomation/api/v1/locations) and dashboard
