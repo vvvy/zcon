@@ -167,6 +167,15 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
     }
   }
 
+  void _editJSON(BuildContext context) async {
+    final jsonS = await configToJson();
+    print("starting json edit, config=$jsonS");
+    final edited = await showDialog(context: context, builder: (context) => JSON(jsonS));
+    if (edited != null) {
+      await configFromJson(edited);
+      reload();
+    }
+  }
 
   List<Widget> _appBarActions(BuildContext context) {
     final w = <Widget>[];
@@ -208,7 +217,7 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
 
   @override
   Widget build(BuildContext context) {
-
+/*
     List<Widget> addAlerts(BuildContext context, List<Widget> l) {
       List<Alert> alerts = devState.alerts;
       if (alerts.isNotEmpty) {
@@ -225,7 +234,7 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
       }
       return l;
     }
-
+*/
     return MaterialApp(
       title: "Z-Way Console",
       theme: ThemeData(
@@ -238,7 +247,7 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
                 child: ListView(
                   // Important: Remove any padding from the ListView.
                   padding: EdgeInsets.zero,
-                  children: addAlerts(context, <Widget>[
+                  children: /*addAlerts(context, */<Widget>[
                     DrawerHeader(
                       child: Text('Z-Way Console (ZCon)', textScaleFactor: 1.5, style: TextStyle(color: Colors.white)),
                       decoration: BoxDecoration(
@@ -262,7 +271,26 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
                         Navigator.pop(context);
                       },
                     ),
-                  ]),
+                    ListTile(
+                      leading: Icon(Icons.edit),
+                      title: Text('Edit config (advanced)'),
+                      onTap: () {
+                        _editJSON(context);
+                        Navigator.pop(context);
+                      },
+                    ),
+                    if (devState.alerts.isNotEmpty) Divider(),
+                    if (devState.alerts.isNotEmpty) Text("Alerts", textAlign: TextAlign.center,),
+                    for (var alert in devState.alerts)
+                      ListTile(
+                        leading: Icon(Icons.warning, color: Colors.yellow),
+                        title: Text(alert.text),
+                        onTap: () {
+                          if (alert.filterId >= 0) devState.setFilter(alert.filterId);
+                          Navigator.pop(context);
+                        },
+                      )
+                  ]/*)*/,
                 )
             ),
             //------------------------------

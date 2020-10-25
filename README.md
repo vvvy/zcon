@@ -6,12 +6,15 @@ Mobile Z-Way console
 
 1. Get Flutter 1.22.2 or later from [Flutter site](https://flutter.io)
 2. Follow Flutter installations instructions
-2. In the directory where this README resides, run
+3. Clone this repo
+4. Set up your own keystore and `key.properties` (needed only for release builds)
+5. In the directory where this README resides, run
 
 ```bash
-flutter build apk --release
+flutter build apk --target-platform android-arm,android-arm64,android-x64 --split-per-abi
 ```
-The resulting APK is in `./build/app/outputs/apk/release/app-release.apk`
+
+The resulting APKs are in `./build/app/outputs/apk/release/`.
 
 ## Application icon attribution
 
