@@ -132,18 +132,31 @@ class ReorderListItem<Id> {
   String toString() => isSeparator ? "---------" : "${i.name}@${i.id}";
 }
 
+/// Interface class for Device List Controller
 abstract class AbstractDevListController {
+  /// whether this controller is operational
   bool get isOnline;
+  /// whether the current filter is editable
   bool get isListEditable;
+  /// apply a new or an updated device list -- called whenever device state has changed
   void applyDevices(List<Device> dev, {bool rebuildHint});
+  /// apply configuration -- the data are usually read from persistent storage
   void applyConfig(int pos, List<int> master, List<int> configPos, List<List<String>> config);
+  /// current filter id (same as position in the master list)
   int get current;
+  /// current filter id
   set current(int id);
+  /// master filter list
   List<IdName> get master;
+  /// starts editing master list
   List<ReorderListItem<int>> startEditMaster();
+  /// ends editing master list, previously started by startEditMaster
   void endEditMaster(List<ReorderListItem<int>> result);
+  /// gets current device list -- this is to display in the main list view
   DevList get list;
+  /// starts edit customN device list
   List<ReorderListItem<String>> startEditList();
+  /// ends editing customN device list, previously started by startEditList
   void endEditList(List<ReorderListItem<String>> result);
   //int getTypeId(String t);
 }

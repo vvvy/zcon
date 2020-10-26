@@ -75,10 +75,10 @@ abstract class DevStateNest {
 
 abstract class DevState {
   final DevStateNest parent;
+  final DevListController _dlc;
+  final AlertBuilder _alertBuilder;
   bool _isLoading;
   bool _updateNeeded;
-  DevListController _dlc;
-  AlertBuilder _alertBuilder;
 
   bool get isLoading => _isLoading;
   int getFilter() => _dlc.current;
