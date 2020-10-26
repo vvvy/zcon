@@ -129,7 +129,7 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
       );
     } else if (v is DevViewEmpty) {
       if (v.error != null)
-        return Text("Error: ${v.error}");
+        return Text("Error: ${v.error}", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.red));
       else if (v.isLoading)
         return CircularProgressIndicator();
       else
@@ -217,24 +217,6 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
 
   @override
   Widget build(BuildContext context) {
-/*
-    List<Widget> addAlerts(BuildContext context, List<Widget> l) {
-      List<Alert> alerts = devState.alerts;
-      if (alerts.isNotEmpty) {
-        l.add(Divider());
-        for (Alert a in alerts)
-          l.add(ListTile(
-            leading: Icon(Icons.warning, color: Colors.yellow),
-            title: Text(a.text),
-            onTap: () {
-              if (a.filterId >= 0) devState.setFilter(a.filterId);
-              Navigator.pop(context);
-            },
-          ));
-      }
-      return l;
-    }
-*/
     return MaterialApp(
       title: "Z-Way Console",
       theme: ThemeData(
