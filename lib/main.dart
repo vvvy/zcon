@@ -129,7 +129,9 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
       );
     } else if (v is DevViewEmpty) {
       if (v.error != null)
-        return Text("Error: ${v.error}", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.red));
+        return Text("ERROR:\n${v.error}", style:
+        DefaultTextStyle.of(context).style.apply(fontSizeFactor: 1.5, color: Colors.red, fontWeightDelta: 3),
+        );
       else if (v.isLoading)
         return CircularProgressIndicator();
       else
