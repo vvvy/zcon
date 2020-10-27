@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:scoped_model/scoped_model.dart';
+
 import 'pref.dart';
 import 'pdu.dart';
 import 'devstate.dart';
@@ -7,19 +10,78 @@ import 'nv.dart';
 import 'reorder.dart';
 import 'davatar.dart';
 import 'getvalue.dart';
+import 'i18n.dart';
+
+void main() => runApp(ZConApp());
 
 
-void main() => runApp(MyApp());
+class ZConModel extends Model implements DevStateNest {
+  DevState _devState;
+  var _nvc = NVController();
+  var _l10nsDelegate = OverriddenL10nsDelegate(null);
+  var _materialsDelegate = OverriddenMaterialDelegate(null);
+  var _widgetsDelegate = OverriddenWidgetsDelegate(null);
 
-class AppState extends State<MyApp> with WidgetsBindingObserver implements DevStateNest {
-  DevState devState;
-  NVController nvc = NVController();
+  ZConModel() { reload(); }
+
+  @override
+  void setDevState(DevState devState) {
+    _nvc.setUpdateHook(() => devState.flagNeedsUpdate());
+    if (_devState != devState && _devState != null) _devState.cleanup();
+    _devState = devState;
+    notifyListeners();
+  }
+
+  /// Handle possible locale change after settings dialog
+  ///
+  /// returns true if notifyListeners is needed
+  void setLocaleState(OverriddenLocaleCode localeCode) {
+    var nl = false;
+    {
+      final newDelegate = _l10nsDelegate.fromCode(localeCode);
+      if (newDelegate != _l10nsDelegate) {
+        _l10nsDelegate = newDelegate;
+        nl = true;
+      }
+    }{
+      final newDelegate = _materialsDelegate.fromCode(localeCode);
+      if (newDelegate != _materialsDelegate) {
+        _materialsDelegate = newDelegate;
+        nl = true;
+      }
+    }{
+      final newDelegate = _widgetsDelegate.fromCode(localeCode);
+      if (newDelegate != _widgetsDelegate) {
+        _widgetsDelegate = newDelegate;
+        nl = true;
+      }
+    }
+    if (nl) notifyListeners();
+  }
+
+  void reload({Settings edited}) {
+    if (edited != null) setLocaleState(edited.localeCode);
+    setDevState(DevStateEmpty.init(this));
+  }
+
+  void init() { reload(); }
+
+  void appPaused() {
+    setDevState(DevStateEmpty(_devState, error: "Application paused"));
+  }
+
+  void appResumed() {
+    setDevState(DevStateEmpty.init(this));
+  }
+}
+
+class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
+  final model = ZConModel();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    reload();
   }
 
   @override
@@ -32,30 +94,101 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
   void didChangeAppLifecycleState(AppLifecycleState state) {
     print("AppLifecycleState: $state");
     switch (state) {
-      case AppLifecycleState.paused:
-        setDevState(DevStateEmpty(this.devState, error: "Application paused"));
-        break;
-      case AppLifecycleState.resumed:
-        setDevState(DevStateEmpty.init(this));
-        break;
+      case AppLifecycleState.paused:  return model.appPaused();
+      case AppLifecycleState.resumed: return model.appResumed();
       default:
         break;
     }
   }
 
   @override
-  void setDevState(DevState devState) {
-    nvc.setUpdateHook(() => devState.flagNeedsUpdate());
-    setState(() {
-      if (this.devState != devState && this.devState != null)
-        this.devState.cleanup();
-      this.devState = devState;
-    });
+  Widget build(BuildContext context) {
+    return ScopedModel<ZConModel>(
+        model: model,
+        child: ScopedModelDescendant<ZConModel>(builder: (context, child, model) => MaterialApp(
+          title: "Z-Way Console",
+          localizationsDelegates: [
+            //app-specific localization delegates
+            ScopedModel.of<ZConModel>(context)._l10nsDelegate,
+            ScopedModel.of<ZConModel>(context)._materialsDelegate,
+            L10nsDelegate.delegate,
+            //framework delegates
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+          ],
+          supportedLocales: supportedLocales,
+          theme: ThemeData(
+            primarySwatch: Colors.blue,
+          ),
+          home: Builder(builder: (context) =>
+            Scaffold(
+              drawer:Drawer(
+                child: ScopedModelDescendant<ZConModel>(builder: (context, child, model) =>
+                  ListView(
+                    padding: EdgeInsets.zero,
+                    children: <Widget>[
+                      DrawerHeader(
+                        child: Text('Z-Way Console (ZCon)', textScaleFactor: 1.5, style: TextStyle(color: Colors.white)),
+                        decoration: BoxDecoration(
+                            color: Colors.blue,
+                            image: const DecorationImage(image: AssetImage("assets/icon/lamp.png"))
+                        ),
+                      ),
+                      ListTile(
+                        leading: Icon(Icons.refresh),
+                        title: Text('Refresh'),
+                        onTap: () {
+                          model.reload();
+                          Navigator.pop(context);
+                        }
+                      ),
+                      ListTile(
+                        leading: Icon(Icons.settings),
+                        title: Text('Settings'),
+                        onTap: () {
+                          _editSettings(context);
+                          Navigator.pop(context);
+                        },
+                      ),
+                      ListTile(
+                        leading: Icon(Icons.edit),
+                        title: Text('Edit config (advanced)'),
+                        onTap: () {
+                          _editJSON(context);
+                          Navigator.pop(context);
+                        },
+                      ),
+                    if (model._devState.alerts.isNotEmpty) Divider(),
+                    if (model._devState.alerts.isNotEmpty) Text("Alerts", textAlign: TextAlign.center,),
+                    for (var alert in model._devState.alerts)
+                      ListTile(
+                        leading: Icon(Icons.warning, color: Colors.yellow),
+                        title: Text(alert.text),
+                        onTap: () {
+                          if (alert.filterId >= 0) model._devState.setFilter(alert.filterId);
+                          Navigator.pop(context);
+                        },
+                      )
+                    ],
+                  )
+                )
+              ),
+              //------------------------------
+              appBar: AppBar(
+                  title: Text("ZCon"),
+                  actions: _appBarActions(context)
+              ),
+              body: Center(
+                  child: Builder(builder: (context) {
+                    return _buildMainView(context);
+                  })
+              ),
+            )
+        ),
+      ))
+    );
   }
 
-  void reload() {
-    setDevState(DevStateEmpty.init(this));
-  }
 
   final _biggerFont = const TextStyle(fontSize: 18.0);
   final _smallerFont = const TextStyle(fontSize: 12.0);
@@ -73,7 +206,7 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
 
   Widget _buildRow(Device d, BuildContext context) {
     String title = d.metrics.title;
-    NV nv = nvc.getNV(d);
+    NV nv = model._nvc.getNV(d);
     var notF = (String s) => Scaffold.of(context).showSnackBar(SnackBar(content: Text(s)));
     var errorF = (String s) => notF("Error: $s");
 
@@ -81,25 +214,25 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
       if (nv is NVShow) {
         return Text(nv.value, style: _biggerFont);
       } else if (nv is NVPushButton) {
-        return IconButton(icon: Icon(Icons.launch), onPressed: () { notF("Activating $title"); nv.onPressed(errorF); });
+        return IconButton(icon: Icon(Icons.launch), onPressed: () async { notF("Activating $title"); nv.onPressed(errorF); });
       } else if (nv is NVSwitch) {
-        return Switch(value: nv.value, onChanged: (v) { notF("Setting $title ${v?'on':'off'}"); nv.onToggle(v, errorF); });
+        return Switch(value: nv.value, onChanged: (v) async { notF("Setting $title ${v?'on':'off'}"); nv.onToggle(v, errorF); });
       } else if (nv is NVThermostatSetPoint) {
         return FlatButton(child: Text(nv.title), onPressed: () =>
-          showDialog(
-            context: context,
-            builder: (context) => GetThermostatSetPoint(nv.value)
-          ).then((v) { if (v != null) {
-            notF("Setting level of $title to $v");
-            nv.onSet(v, errorF);
-          }})
+            showDialog(
+                context: context,
+                builder: (context) => GetThermostatSetPoint(nv.value)
+            ).then((v) async { if (v != null) {
+              notF("Setting level of $title to $v");
+              nv.onSet(v, errorF);
+            }})
         );
       } else if (nv is NVSwitchMultilevel) {
         return FlatButton(child: Text(nv.title), onPressed: () =>
             showDialog(
                 context: context,
                 builder: (context) => GetSwitchMultilevel(nv.value)
-            ).then((v) { if (v != null) {
+            ).then((v) async { if (v != null) {
               notF("Setting level of $title to $v");
               nv.onSet(v, errorF);
             }})
@@ -110,16 +243,17 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
     } (nv);
 
     return ListTile(
-      title: Text(title, style: _biggerFont),
-      leading: avatar(d),
-      subtitle: Text(_formatUpdateTime(d.updateTime), style: _smallerFont),
-      onLongPress: () { if(nv is NVUpdate) { notF("Updating $title"); nv.onUpdate(errorF); } },
-      trailing: trailing
+        title: Text(title, style: _biggerFont),
+        leading: avatar(d),
+        subtitle: Text(_formatUpdateTime(d.updateTime), style: _smallerFont),
+        onLongPress: () async { if(nv is NVUpdate) { notF("Updating $title"); nv.onUpdate(errorF); } },
+        trailing: trailing
     );
   }
 
-  Widget _buildMainView(BuildContext context) {
-    var v = devState.getDeviceView((s) => Scaffold.of(context).showSnackBar(SnackBar(content: Text(s))));
+  Widget _buildMainView(BuildContext context) =>
+      ScopedModelDescendant<ZConModel>(builder: (context, child, model) {
+    var v = model._devState.getDeviceView((s) => Scaffold.of(context).showSnackBar(SnackBar(content: Text(s))));
     if (v is DevViewFull) {
       //print("@buildMainView");
       return ListView.separated(
@@ -139,33 +273,50 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
     } else {
       return Text("ZCon (unknown view)");
     }
+  });
+
+  static Future<void> _viewEditor(BuildContext context) async {
+    final vs = await showDialog<List<ReorderListItem<String>>>(
+      context: context,
+      builder: (context) => Reorder<ReorderListItem<String>>(
+        ScopedModel.of<ZConModel>(context)._devState.startEditList(),
+        (s) => s.isSeparator ? null : s.i.name
+      )
+    );
+    if (vs != null)
+      ScopedModel.of<ZConModel>(context)._devState.endEditList(vs);
+  }
+
+  static Future<void> _masterEditor(BuildContext context) async {
+    final vs = await showDialog<List<ReorderListItem<int>>>(
+        context: context,
+        builder: (context) => Reorder<ReorderListItem<int>>(
+          ScopedModel.of<ZConModel>(context)._devState.startEditMaster(),
+          (s) => s.isSeparator ? null : s.i.name
+        )
+    );
+    if (vs != null)
+      ScopedModel.of<ZConModel>(context)._devState.endEditMaster(vs);
   }
 
   void _editSettings(BuildContext context) async {
-    FVC viewEditor = devState.listsOnline && devState.isListEditable ? (context) => showDialog(
-        context: context,
-        builder: (context) => Reorder<ReorderListItem<String>>(
-            devState.startEditList(),
-                (s) => s.isSeparator ? null : s.i.name
-        )
-    ).then((vs) { if (vs != null) devState.endEditList(vs); })
-        : null;
+    final model = ScopedModel.of<ZConModel>(context);
 
-    FVC masterEditor = devState.listsOnline ? (context) => showDialog(
-        context: context,
-        builder: (context) => Reorder<ReorderListItem<int>>(
-            devState.startEditMaster(),
-                (s) => s.isSeparator ? null : s.i.name
-        )
-    ).then((vs) { if (vs != null) devState.endEditMaster(vs); })
-        : null;
+    FVC viewEditor =
+      model._devState.listsOnline && model._devState.isListEditable ?
+      _viewEditor : null;
 
+    FVC masterEditor = model._devState.listsOnline ?
+      _masterEditor : null;
 
     final orig = await readSettings();
-    final edited = await showDialog(context: context, builder: (context) => Preferences(orig, masterEditor, viewEditor));
+    final edited = await showDialog<Settings>(
+        context: context,
+        builder: (context) => Preferences(orig, masterEditor, viewEditor)
+    );
     if (edited != null) {
       await writeSettings(edited);
-      reload();
+      ScopedModel.of<ZConModel>(context).reload(edited: edited);
     }
   }
 
@@ -175,28 +326,29 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
     final edited = await showDialog(context: context, builder: (context) => JSON(jsonS));
     if (edited != null) {
       await configFromJson(edited);
-      reload();
+      ScopedModel.of<ZConModel>(context).reload();
     }
   }
 
   List<Widget> _appBarActions(BuildContext context) {
     final w = <Widget>[];
+    final model = ScopedModel.of<ZConModel>(context);
 
-    List<Alert> alerts = devState.alerts;
+    List<Alert> alerts = model._devState.alerts;
     if (alerts.isNotEmpty) {
       int i = alerts.map((a) => a.filterId).reduce((a, b) => a > b ? a : b);
       w.add(IconButton(
         icon: Icon(Icons.warning, color: Colors.yellow),
         tooltip: alerts.map((a) => a.text).join("\n"),
-        onPressed: (i >= 0) ? () => devState.setFilter(i) : null,
+        onPressed: (i >= 0) ? () => model._devState.setFilter(i) : null,
       ));
     }
 
-    if (devState.listsOnline) {
+    if (model._devState.listsOnline) {
       w.add(DropdownButton<int>(
-          value: devState.getFilter(),
-          items: devState.getAvailableFilters().map((n) => DropdownMenuItem<int>(value: n.id, child: Text(n.name))).toList(),
-          onChanged: (s) => devState.setFilter(s)
+          value: model._devState.getFilter(),
+          items: model._devState.getAvailableFilters().map((n) => DropdownMenuItem<int>(value: n.id, child: Text(n.name))).toList(),
+          onChanged: (s) => model._devState.setFilter(s)
       ));
     }
 
@@ -208,94 +360,19 @@ class AppState extends State<MyApp> with WidgetsBindingObserver implements DevSt
     w.add(IconButton(
         icon: Icon(Icons.refresh),
         //TODO somewhat better e.g. animation
-        color: devState.isLoading ? Colors.blueGrey : Colors.white,
+        color: model._devState.isLoading ? Colors.blueGrey : Colors.white,
         onPressed: () {
-          reload();
+          model.reload();
         }));
 
     return w;
   }
-
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: "Z-Way Console",
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: Builder(builder: (context) =>
-          Scaffold(
-            //-------------
-            drawer:Drawer(
-                child: ListView(
-                  // Important: Remove any padding from the ListView.
-                  padding: EdgeInsets.zero,
-                  children: /*addAlerts(context, */<Widget>[
-                    DrawerHeader(
-                      child: Text('Z-Way Console (ZCon)', textScaleFactor: 1.5, style: TextStyle(color: Colors.white)),
-                      decoration: BoxDecoration(
-                        color: Colors.blue,
-                        image: const DecorationImage(image: AssetImage("assets/icon/lamp.png"))
-                      ),
-                    ),
-                    ListTile(
-                      leading: Icon(Icons.refresh),
-                      title: Text('Refresh'),
-                      onTap: () {
-                        reload();
-                        Navigator.pop(context);
-                      },
-                    ),
-                    ListTile(
-                      leading: Icon(Icons.settings),
-                      title: Text('Settings'),
-                      onTap: () {
-                        _editSettings(context);
-                        Navigator.pop(context);
-                      },
-                    ),
-                    ListTile(
-                      leading: Icon(Icons.edit),
-                      title: Text('Edit config (advanced)'),
-                      onTap: () {
-                        _editJSON(context);
-                        Navigator.pop(context);
-                      },
-                    ),
-                    if (devState.alerts.isNotEmpty) Divider(),
-                    if (devState.alerts.isNotEmpty) Text("Alerts", textAlign: TextAlign.center,),
-                    for (var alert in devState.alerts)
-                      ListTile(
-                        leading: Icon(Icons.warning, color: Colors.yellow),
-                        title: Text(alert.text),
-                        onTap: () {
-                          if (alert.filterId >= 0) devState.setFilter(alert.filterId);
-                          Navigator.pop(context);
-                        },
-                      )
-                  ]/*)*/,
-                )
-            ),
-            //------------------------------
-            appBar: AppBar(
-              title: Text("ZCon"),
-              actions: _appBarActions(context)
-            ),
-            body: Center(
-                child: Builder(builder: (context) {
-                  return _buildMainView(context);
-                })
-            ),
-          )
-      ),
-    );
-  }
 }
 
-class MyApp extends StatefulWidget {
+
+class ZConApp extends StatefulWidget {
   @override
-  State createState() => new AppState();
+  State createState() => new ZConAppState();
 }
 
 

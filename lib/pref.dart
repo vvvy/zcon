@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
+import 'i18n.dart';
 
 const
   k_url = 'url',
@@ -10,6 +11,7 @@ const
   k_intervalMainS = 'intervalMainS',
   k_intervalErrorRetryS = 'intervalErrorRetryS',
   k_intervalUpdateS = 'intervalUpdateS',
+  k_localeCode = 'localeCode',
   k_config = 'config';
 
 Future<List<String>> readConfig() async {
@@ -24,19 +26,19 @@ Future<void> writeConfig(List<String> configRaw) async {
 
 /// Returns the app config as a json-serialized string.
 ///
-/// Password fields are not included in the string.
+/// Password and locale fields are not included in the string.
 Future<String> configToJson() async {
   Map<String, dynamic> m = Map();
   SharedPreferences prefs = await SharedPreferences.getInstance();
   for (String k in prefs.getKeys())
-    if (k != k_password)
+    if (!{k_password, k_localeCode}.contains(k))
       m[k] = prefs.get(k);
   return jsonEncode(m);
 }
 
 /// Parses and stores the app config from a json-serialized string.
 ///
-/// Password fields are ignored.
+/// Password and locale fields are ignored.
 Future<void> configFromJson(String configJson) async {
   Map<String, dynamic> m = jsonDecode(configJson);
   SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -60,11 +62,14 @@ class Settings {
   final int intervalErrorRetryS;
   final int intervalUpdateS;
 
+  final OverriddenLocaleCode localeCode;
+
   Settings({
     this.url, this.username, this.password,
     this.intervalMainS: _intervalMainS,
     this.intervalErrorRetryS: _intervalErrorRetryS,
-    this.intervalUpdateS: _intervalUpdateS
+    this.intervalUpdateS: _intervalUpdateS,
+    this.localeCode: OverriddenLocaleCode.None
   });
 }
 
@@ -76,7 +81,8 @@ Future<Settings> readSettings() async {
       password: prefs.getString(k_password) ?? "",
       intervalMainS: prefs.getInt(k_intervalMainS) ?? _intervalMainS,
       intervalErrorRetryS: prefs.getInt(k_intervalErrorRetryS) ?? _intervalErrorRetryS,
-      intervalUpdateS: prefs.getInt(k_intervalUpdateS) ?? _intervalUpdateS
+      intervalUpdateS: prefs.getInt(k_intervalUpdateS) ?? _intervalUpdateS,
+      localeCode: OverriddenLocaleCodeSerDe.de(prefs.getString(k_localeCode)) ?? OverriddenLocaleCode.None
   );
 }
 
@@ -88,6 +94,7 @@ Future<void> writeSettings(Settings settings) async {
   await prefs.setInt(k_intervalMainS, settings.intervalMainS);
   await prefs.setInt(k_intervalErrorRetryS, settings.intervalErrorRetryS);
   await prefs.setInt(k_intervalUpdateS, settings.intervalUpdateS);
+  await prefs.setString(k_localeCode, OverriddenLocaleCodeSerDe.ser(settings.localeCode));
 }
 
 typedef Future<void> FVC(BuildContext context);
@@ -110,6 +117,7 @@ class Preferences extends StatefulWidget {
 class PreferencesState extends State<Preferences> {
   final initSettings;
   final _masterEditor, _viewEditor;
+  OverriddenLocaleCode _localeCode;
 
   final
       cUsername = TextEditingController(),
@@ -131,90 +139,17 @@ class PreferencesState extends State<Preferences> {
     cUsername.text = initSettings.username;
     cPassword.text = initSettings.password;
     cIntervalMainS.text = initSettings.intervalMainS.toString();
+    _localeCode = initSettings.localeCode;
   }
 
   static const _boldFont = TextStyle(fontWeight: FontWeight.bold);
 
   @override
   Widget build(BuildContext context) {
+    final materialLoc = Localizations.of<MaterialLocalizations>(context, MaterialLocalizations);
+    final myLoc = L10ns.of(context);
     final vrGeneric = (String value) => value.isEmpty ? 'Please enter some text' : null;
 
-    final children = <Widget>[
-      Text("URL"),
-      TextFormField(
-        controller: cUrl,
-        autocorrect: false,
-        validator: vrGeneric,
-      ),
-      Text("Username"),
-      TextFormField(
-        controller: cUsername,
-        autocorrect: false,
-        validator: vrGeneric,
-      ),
-      Text("Password"),
-      TextFormField(
-        controller: cPassword,
-        autocorrect: false,
-        validator: vrGeneric,
-        obscureText: true,
-      ),
-      if (_masterEditor != null || _viewEditor != null) ...(
-          <Widget>[
-            Divider(),
-            Text("View settings", style: _boldFont),
-            Row(children: <Widget>[
-              if (_masterEditor != null)
-                RaisedButton(child: Text("Edit view list"), onPressed: () => _masterEditor(context)),
-              if(_viewEditor != null)
-                RaisedButton(child: Text("Edit current view"), onPressed: () => _viewEditor(context))
-            ])
-          ]
-      ),
-      Divider(),
-      Text("Advanced", style: _boldFont),
-      Text("Update interval, seconds"),
-      TextFormField(
-        autovalidateMode: AutovalidateMode.onUserInteraction,
-        controller: cIntervalMainS,
-        validator: (value) {
-          var iv = int.tryParse(value);
-          var t = iv != null;
-          t = t && iv >= 5;
-          if (!t) {
-            return 'Must be an int >= 5';
-          }
-          return null;
-        },
-      ),
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            FlatButton(
-              child: Text('Cancel'),
-              onPressed: () => Navigator.pop(context, null),
-            ),
-            FlatButton(
-              child: Text('Submit'),
-              onPressed: () {
-                if (_formKey.currentState.validate()) {
-                  Navigator.pop(context, Settings(
-                      url: cUrl.text,
-                      username: cUsername.text,
-                      password: cPassword.text,
-                      intervalMainS: int.tryParse(cIntervalMainS.text) ?? _intervalMainS
-                  ));
-                }
-              },
-            ),
-          ]
-        )
-      )
-    ];
-
-    // Build a Form widget using the _formKey we created above
     return Form(
         key: _formKey,
         child: SingleChildScrollView(child: Dialog(
@@ -223,7 +158,90 @@ class PreferencesState extends State<Preferences> {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: children
+                children: <Widget>[
+                  Text("URL"),
+                  TextFormField(
+                    controller: cUrl,
+                    autocorrect: false,
+                    validator: vrGeneric,
+                  ),
+                  Text(myLoc.userName),
+                  TextFormField(
+                    controller: cUsername,
+                    autocorrect: false,
+                    validator: vrGeneric,
+                  ),
+                  Text(myLoc.password),
+                  TextFormField(
+                    controller: cPassword,
+                    autocorrect: false,
+                    validator: vrGeneric,
+                    obscureText: true,
+                  ),
+                  Text("Language"),
+                  DropdownButtonFormField(items: <DropdownMenuItem<OverriddenLocaleCode>>[
+                    DropdownMenuItem<OverriddenLocaleCode>(value: OverriddenLocaleCode.None, child: Text(myLoc.systemDefined)),
+                    DropdownMenuItem<OverriddenLocaleCode>(value: OverriddenLocaleCode.EN, child: Text(myLoc.english)),
+                    DropdownMenuItem<OverriddenLocaleCode>(value: OverriddenLocaleCode.RU, child: Text(myLoc.russian)),
+                  ],
+                      value: _localeCode,
+                      onChanged: (value) => setState(() { _localeCode = value; })
+                  ),
+                  if (_masterEditor != null || _viewEditor != null) ...(
+                      <Widget>[
+                        Divider(),
+                        Text("View settings", style: _boldFont),
+                        Row(children: <Widget>[
+                          if (_masterEditor != null)
+                            RaisedButton(child: Text("Edit view list"), onPressed: () => _masterEditor(context)),
+                          if(_viewEditor != null)
+                            RaisedButton(child: Text("Edit current view"), onPressed: () => _viewEditor(context))
+                        ])
+                      ]
+                  ),
+                  Divider(),
+                  Text("Advanced", style: _boldFont),
+                  Text("Update interval, seconds"),
+                  TextFormField(
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    controller: cIntervalMainS,
+                    validator: (value) {
+                      var iv = int.tryParse(value);
+                      var t = iv != null;
+                      t = t && iv >= 5;
+                      if (!t) {
+                        return 'Must be an int >= 5';
+                      }
+                      return null;
+                    },
+                  ),
+                  Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            FlatButton(
+                              child: Text(materialLoc.cancelButtonLabel),
+                              onPressed: () => Navigator.pop(context, null),
+                            ),
+                            FlatButton(
+                              child: Text(materialLoc.okButtonLabel),
+                              onPressed: () {
+                                if (_formKey.currentState.validate()) {
+                                  Navigator.pop(context, Settings(
+                                      url: cUrl.text,
+                                      username: cUsername.text,
+                                      password: cPassword.text,
+                                      intervalMainS: int.tryParse(cIntervalMainS.text) ?? _intervalMainS,
+                                      localeCode: _localeCode
+                                  ));
+                                }
+                              },
+                            ),
+                          ]
+                      )
+                  )
+                ]
               )
             ),
         ))
