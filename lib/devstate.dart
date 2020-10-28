@@ -1,9 +1,10 @@
 import 'dart:async';
-import 'pdu.dart';
-import 'pref.dart';
-import 'devlist.dart';
-import 'constants.dart';
-import 'model.dart';
+
+import 'package:zcon/pdu.dart';
+import 'package:zcon/pref.dart';
+import 'package:zcon/devlist.dart';
+import 'package:zcon/constants.dart';
+import 'package:zcon/model.dart';
 
 //------------------------------------------------------------------------------
 
@@ -24,11 +25,13 @@ class DevViewEmpty extends DevView {
 }
 
 //------------------------------------------------------------------------------
+enum AlertType { Temperature, Battery, Failed }
 
 class Alert {
-  final String text;
+  final AlertType type;
+  final int count;
   final int filterId;
-  Alert({String text, int filterId = -1}): text = text, filterId = filterId;
+  Alert(this.type, this.count, [this.filterId = -1]);
 }
 
 class AlertBuilder {
@@ -60,11 +63,11 @@ class AlertBuilder {
     }
     _alerts = [];
     if (temperatureCount > 0)
-      _alerts.add(Alert(text: '$temperatureCount: temperature', filterId: _temperatureFilterId));
+      _alerts.add(Alert(AlertType.Temperature, temperatureCount, _temperatureFilterId));
     if (failedCount > 0)
-      _alerts.add(Alert(text: '$failedCount: failed', filterId: _failedFilterId));
+      _alerts.add(Alert(AlertType.Failed, failedCount, _failedFilterId));
     if (batteryCount > 0)
-      _alerts.add(Alert(text: '$batteryCount: battery', filterId: _batteryFilterId));
+      _alerts.add(Alert(AlertType.Battery,batteryCount, _batteryFilterId));
   }
 
   List<Alert> get alertList => _alerts;
@@ -83,7 +86,7 @@ abstract class DevState {
 
   bool get isLoading => _isLoading;
   int getFilter() => _dlc.current;
-  List<IdName<int>> getAvailableFilters() => _dlc.master;
+  List<IdName<int>> getAvailableFilters(ViewNameTranslator vnt) => _dlc.getMaster(vnt);
   void setFilter(int current) {
     _dlc.current = current;
     //TODO move _current under separate persistence key
@@ -99,7 +102,7 @@ abstract class DevState {
     _model.submit(ViewConfigUpdate(_dlc.makeConfig()));
     //writeConfig(_dlc.makeConfig()).then((_) => parent.setDevState(this));
   }
-  List<ReorderListItem<int>> startEditMaster() => _dlc.startEditMaster();
+  List<ReorderListItem<int>> startEditMaster(ViewNameTranslator vnt) => _dlc.startEditMaster(vnt);
   void endEditMaster(List<ReorderListItem<int>> result) {
     _dlc.endEditMaster(result);
     _model.submit(ViewConfigUpdate(_dlc.makeConfig()));
@@ -115,9 +118,9 @@ abstract class DevState {
   void cleanup();
   DevState(this._model, this._isLoading, this._updateNeeded):
         _alertBuilder = AlertBuilder(
-            failedFilterId: DevListController.getTypeId("Failed"),
-            batteryFilterId: DevListController.getTypeId("Battery"),
-            temperatureFilterId: DevListController.getTypeId("Temperature")
+            failedFilterId: DevListController.getViewId(View.Failed),
+            batteryFilterId: DevListController.getViewId(View.Battery),
+            temperatureFilterId: DevListController.getViewId(View.Temperature)
         ),
         _dlc = new DevListController();
 

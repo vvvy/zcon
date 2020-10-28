@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'pref.dart';
+import 'package:zcon/pref.dart';
 
 class Metrics {
 // "scaleTitle":"°C",

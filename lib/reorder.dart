@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:zcon/i18n.dart';
 
 typedef String TitleF<T>(T item);
 
@@ -76,14 +77,16 @@ class ReorderState<T> extends State<Reorder<T>> {
 
   @override
   Widget build(BuildContext context) {
+    final myLoc = L10ns.of(context);
+    final materialLoc = matLoc(context);
     return
       Dialog(
           child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Drag and drop to reorder. Long press on an item to start dragging. Drop below the separator to hide and vice versa. Drop to panels to move to top/bottom.", style: _smallerFont),
+                Text(myLoc.reorderHint, style: _smallerFont),
                 DragTarget<int>(
-                    builder: (c, x, y) => _dropPanel(x.isNotEmpty, "To top"),
+                    builder: (c, x, y) => _dropPanel(x.isNotEmpty, myLoc.toTop),
                     onWillAccept: (x) { _set(x, 0); return true; },
                     onLeave: (x) => _unset(),
                     onAccept: (x) => _commit()
@@ -94,7 +97,7 @@ class ReorderState<T> extends State<Reorder<T>> {
                   onAccept: (x) => _commit()
                 )),
                 DragTarget<int>(
-                    builder: (c, x, y) => _dropPanel(x.isNotEmpty, "To bottom"),
+                    builder: (c, x, y) => _dropPanel(x.isNotEmpty, myLoc.toBottom),
                     onWillAccept: (x) {  _set(x, _l.length - 1); return true; },
                     onLeave: (x) => _unset(),
                     onAccept: (x) => _commit()
@@ -102,11 +105,11 @@ class ReorderState<T> extends State<Reorder<T>> {
                 Row(
                   children: <Widget>[
                     FlatButton(
-                        child: Text("Ok"),
+                        child: Text(materialLoc.okButtonLabel),
                         onPressed: () => Navigator.pop(context, _l)
                     ),
                     FlatButton(
-                        child: Text("Cancel"),
+                        child: Text(materialLoc.cancelButtonLabel),
                         onPressed: () => Navigator.pop(context, null)
                     )
                   ],

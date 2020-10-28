@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'nv.dart';
+import 'package:zcon/nv.dart';
+import 'package:zcon/i18n.dart';
 
 class GetThermostatSetPoint extends StatefulWidget {
   final double _value;
@@ -10,7 +11,6 @@ class GetThermostatSetPoint extends StatefulWidget {
   State<StatefulWidget> createState() {
     return GetThermostatSetPointState(_value);
   }
-
 }
 
 class GetThermostatSetPointState extends State<GetThermostatSetPoint> {
@@ -22,6 +22,7 @@ class GetThermostatSetPointState extends State<GetThermostatSetPoint> {
 
   @override
   Widget build(BuildContext context) {
+    final materialLoc = matLoc(context);
     final children = <Widget>[
       Text(_value.toString()),
       Slider(value: _value, min: 5.0, max: 30.0, divisions: 50, onChanged: (w) { setState(() { _value = w; }); }),
@@ -38,11 +39,11 @@ class GetThermostatSetPointState extends State<GetThermostatSetPoint> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 FlatButton(
-                  child: Text('Cancel'),
+                  child: Text(materialLoc.cancelButtonLabel),
                   onPressed: () => Navigator.pop(context, null),
                 ),
                 FlatButton(
-                  child: Text('Submit'),
+                  child: Text(materialLoc.okButtonLabel),
                   onPressed: () {
                     if (_formKey.currentState.validate())
                       Navigator.pop(context, _value);
@@ -92,16 +93,17 @@ class GetSwitchMultilevelState extends State<GetSwitchMultilevel> {
 
   @override
   Widget build(BuildContext context) {
+    final materialLoc = matLoc(context);
+    final myLoc = L10ns.of(context);
     final children = <Widget>[
-      //Text(_value.toString()),
       Text(NVSwitchMultilevel.nvText(_value)),
       Slider(value: _value.toDouble(), min: 0.0, max: 99.0, divisions: 50, onChanged: (w) { setState(() { _value = w.toInt(); }); }),
       Row(children: <Widget>[
-        Flexible(child: FlatButton(child: Text("Closed"), onPressed: (){ setState(() { _value = 0; }); })),
+        Flexible(child: FlatButton(child: Text(myLoc.closed), onPressed: (){ setState(() { _value = 0; }); })),
         Flexible(child: FlatButton(child: Text("25%"), onPressed: (){ setState(() { _value = 25; }); })),
         Flexible(child: FlatButton(child: Text("50%"), onPressed: (){ setState(() { _value = 50; }); })),
         Flexible(child: FlatButton(child: Text("75%"), onPressed: (){ setState(() { _value = 75; }); })),
-        Flexible(child: FlatButton(child: Text("Open"), onPressed: (){ setState(() { _value = 99; }); })),
+        Flexible(child: FlatButton(child: Text(myLoc.open), onPressed: (){ setState(() { _value = 99; }); })),
       ],),
       Padding(
           padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -109,11 +111,11 @@ class GetSwitchMultilevelState extends State<GetSwitchMultilevel> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 FlatButton(
-                  child: Text('Cancel'),
+                  child: Text(materialLoc.cancelButtonLabel),
                   onPressed: () => Navigator.pop(context, null),
                 ),
                 FlatButton(
-                  child: Text('Submit'),
+                  child: Text(materialLoc.okButtonLabel),
                   onPressed: () {
                     if (_formKey.currentState.validate())
                       Navigator.pop(context, _value);
@@ -138,5 +140,4 @@ class GetSwitchMultilevelState extends State<GetSwitchMultilevel> {
         ))
     );
   }
-
 }

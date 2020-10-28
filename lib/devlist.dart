@@ -1,5 +1,5 @@
-import 'pdu.dart';
-import 'pref.dart';
+import 'package:zcon/pdu.dart';
+import 'package:zcon/pref.dart';
 //------------------------------------------------------------------------------
 
 abstract class DevList {
@@ -120,7 +120,7 @@ class IdName<Id> {
   final Id id;
   final String name;
 
-  IdName(Id id, String name) : id = id, name = name;
+  IdName(this.id, this.name);
 }
 
 class ReorderListItem<Id> {
@@ -148,9 +148,9 @@ abstract class AbstractDevListController {
   /// current filter id
   set current(int id);
   /// master filter list
-  List<IdName> get master;
+  List<IdName> getMaster(ViewNameTranslator vnt);
   /// starts editing master list
-  List<ReorderListItem<int>> startEditMaster();
+  List<ReorderListItem<int>> startEditMaster(ViewNameTranslator vnt);
   /// ends editing master list, previously started by startEditMaster
   void endEditMaster(List<ReorderListItem<int>> result);
   /// gets current device list -- this is to display in the main list view
@@ -173,24 +173,42 @@ enum _S {
   err
 }
 
+enum View {
+  All,
+  Temperature,
+  Thermostats,
+  Scene,
+  Switches,
+  Blinds,
+  Battery,
+  Failed,
+  Custom1,
+  Custom2,
+  Custom3,
+  Custom4,
+  Custom5
+}
+
+typedef String ViewNameTranslator(View view);
+
 class DevListController extends AbstractDevListController {
-  static final Map<String, DevListType> _typeMap = {
-    "All": DevListTypeIdentity(),
-    "Temperature": DevListTypeIndex(f: deviceAndProbeTypeFilter("sensorMultilevel", "temperature")),
-    "Thermostats": DevListTypeIndex(f: deviceTypeFilter("thermostat")),
-    "Scene": DevListTypeIndex(f: deviceTypeFilter("toggleButton")),
-    "Switches": DevListTypeIndex(f: deviceTypeFilter("switchBinary")),
-    "Blinds": DevListTypeIndex(f: deviceAndProbeTypeFilter("switchMultilevel", "motor")),
-    "Battery": DevListTypeIndex(f: deviceTypeFilter("battery")),
-    "Failed": DevListTypeIndex(f: (d) => d.metrics.isFailed == true),
-    "Custom1": DevListTypeIdList(),
-    "Custom2": DevListTypeIdList(),
-    "Custom3": DevListTypeIdList(),
-    "Custom4": DevListTypeIdList(),
-    "Custom5": DevListTypeIdList(),
+  static final Map<View, DevListType> _typeMap = {
+    View.All: DevListTypeIdentity(),
+    View.Temperature: DevListTypeIndex(f: deviceAndProbeTypeFilter("sensorMultilevel", "temperature")),
+    View.Thermostats: DevListTypeIndex(f: deviceTypeFilter("thermostat")),
+    View.Scene: DevListTypeIndex(f: deviceTypeFilter("toggleButton")),
+    View.Switches: DevListTypeIndex(f: deviceTypeFilter("switchBinary")),
+    View.Blinds: DevListTypeIndex(f: deviceAndProbeTypeFilter("switchMultilevel", "motor")),
+    View.Battery: DevListTypeIndex(f: deviceTypeFilter("battery")),
+    View.Failed: DevListTypeIndex(f: (d) => d.metrics.isFailed == true),
+    View.Custom1: DevListTypeIdList(),
+    View.Custom2: DevListTypeIdList(),
+    View.Custom3: DevListTypeIdList(),
+    View.Custom4: DevListTypeIdList(),
+    View.Custom5: DevListTypeIdList(),
   };
 
-  static final List<String> _typeNames = _typeMap.keys.toList(growable: false);
+  static final List<View> _typeIds = _typeMap.keys.toList(growable: false);
   static final List<DevListType> _types = _typeMap.values.toList(growable: false);
 
   List<int> _generations;
@@ -205,7 +223,7 @@ class DevListController extends AbstractDevListController {
     _generation = 0;
   }
 
-  static int getTypeId(String t) => DevListController._typeNames.indexOf(t);
+  static int getViewId(View v) => DevListController._typeIds.indexOf(v);
 
   @override
   bool get isOnline => _master != null && _devices != null;
@@ -225,13 +243,14 @@ class DevListController extends AbstractDevListController {
   }
 
   @override
-  List<IdName<int>> get master =>  _master.map((i) => IdName(i, _typeNames[i])).toList();
+  List<IdName<int>> getMaster(ViewNameTranslator vnt) =>
+      _master.map((i) => IdName(i, vnt(_typeIds[i]))).toList();
 
   @override
-  List<ReorderListItem<int>> startEditMaster() {
-    final masterComplement = Iterable.generate(_typeNames.length).toSet().difference(_master.toSet());
-    final l = _master.map((i) => ReorderListItem<int>(i, _typeNames[i])).toList();
-    final m = masterComplement.map((i) => ReorderListItem<int>(i, _typeNames[i])).toList();
+  List<ReorderListItem<int>> startEditMaster(ViewNameTranslator vnt) {
+    final masterComplement = Iterable.generate(_typeIds.length).toSet().difference(_master.toSet());
+    final l = _master.map((i) => ReorderListItem<int>(i, vnt(_typeIds[i]))).toList();
+    final m = masterComplement.map((i) => ReorderListItem<int>(i, vnt(_typeIds[i]))).toList();
     return l + [ReorderListItem.sep()] + m;
   }
 

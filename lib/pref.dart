@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
-import 'i18n.dart';
+import 'package:zcon/i18n.dart';
 
 const
   k_url = 'url',
@@ -13,7 +13,6 @@ const
   k_intervalUpdateS = 'intervalUpdateS',
   k_localeCode = 'localeCode',
   k_config = 'config';
-
 
 class ViewConfig {
   final List<String> views;
@@ -124,8 +123,8 @@ class Preferences extends StatefulWidget {
 }
 
 class PreferencesState extends State<Preferences> {
-  final initSettings;
-  final _masterEditor, _viewEditor;
+  final Settings initSettings;
+  final FVC _masterEditor, _viewEditor;
   OverriddenLocaleCode _localeCode;
 
   final
@@ -136,10 +135,7 @@ class PreferencesState extends State<Preferences> {
 
   final _formKey = GlobalKey<FormState>();
 
-  PreferencesState(Settings settings, FVC masterEditor, FVC viewEditor):
-        initSettings = settings,
-        _masterEditor = masterEditor,
-        _viewEditor = viewEditor;
+  PreferencesState(this.initSettings, this._masterEditor, this._viewEditor);
 
   @override
   void initState() {
@@ -155,9 +151,9 @@ class PreferencesState extends State<Preferences> {
 
   @override
   Widget build(BuildContext context) {
-    final materialLoc = Localizations.of<MaterialLocalizations>(context, MaterialLocalizations);
+    final materialLoc = matLoc(context);
     final myLoc = L10ns.of(context);
-    final vrGeneric = (String value) => value.isEmpty ? 'Please enter some text' : null;
+    final vrGeneric = (String value) => value.isEmpty ? myLoc.inputRequired : null;
 
     return Form(
         key: _formKey,
@@ -168,7 +164,7 @@ class PreferencesState extends State<Preferences> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text("URL"),
+                  Text(myLoc.url),
                   TextFormField(
                     controller: cUrl,
                     autocorrect: false,
@@ -187,7 +183,7 @@ class PreferencesState extends State<Preferences> {
                     validator: vrGeneric,
                     obscureText: true,
                   ),
-                  Text("Language"),
+                  Text(myLoc.language),
                   DropdownButtonFormField(items: <DropdownMenuItem<OverriddenLocaleCode>>[
                     DropdownMenuItem<OverriddenLocaleCode>(value: OverriddenLocaleCode.None, child: Text(myLoc.systemDefined)),
                     DropdownMenuItem<OverriddenLocaleCode>(value: OverriddenLocaleCode.EN, child: Text(myLoc.english)),
@@ -199,18 +195,18 @@ class PreferencesState extends State<Preferences> {
                   if (_masterEditor != null || _viewEditor != null) ...(
                       <Widget>[
                         Divider(),
-                        Text("View settings", style: _boldFont),
-                        Row(children: <Widget>[
+                        Text(myLoc.viewSettings, style: _boldFont),
+                        Column(children: <Widget>[
                           if (_masterEditor != null)
-                            RaisedButton(child: Text("Edit view list"), onPressed: () => _masterEditor(context)),
+                            RaisedButton(child: Text(myLoc.editViewList), onPressed: () => _masterEditor(context)),
                           if(_viewEditor != null)
-                            RaisedButton(child: Text("Edit current view"), onPressed: () => _viewEditor(context))
+                            RaisedButton(child: Text(myLoc.editCurrentView), onPressed: () => _viewEditor(context))
                         ])
                       ]
                   ),
                   Divider(),
-                  Text("Advanced", style: _boldFont),
-                  Text("Update interval, seconds"),
+                  Text(myLoc.advanced, style: _boldFont),
+                  Text(myLoc.updateIntervalSeconds),
                   TextFormField(
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     controller: cIntervalMainS,
@@ -219,7 +215,7 @@ class PreferencesState extends State<Preferences> {
                       var t = iv != null;
                       t = t && iv >= 5;
                       if (!t) {
-                        return 'Must be an int >= 5';
+                        return myLoc.intGt5;
                       }
                       return null;
                     },
@@ -273,6 +269,9 @@ class JSONState extends State<JSON> {
 
   @override
   Widget build(BuildContext context) {
+    final materialLoc = matLoc(context);
+    final myLoc = L10ns.of(context);
+
     // Build a Form widget using the _formKey we created above
     return Form(
       key: _formKey,
@@ -283,14 +282,14 @@ class JSONState extends State<JSON> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text("JSON config"),
+              Text(myLoc.jsonConfig),
               TextFormField(
                 controller: cJSON,
                 minLines: 3,
                 maxLines: 6,
                 autocorrect: false,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
-                validator: (value) { try { jsonDecode(value); return null; } catch(_) { return "Invalid JSON"; } },
+                validator: (value) { try { jsonDecode(value); return null; } catch(_) { return myLoc.invalidJson; } },
               ),
               Padding(
               padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -298,7 +297,7 @@ class JSONState extends State<JSON> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     FlatButton(
-                      child: Text('Submit'),
+                      child: Text(materialLoc.okButtonLabel),
                       onPressed: () {
                         if (_formKey.currentState.validate()) {
                           Navigator.pop(context, cJSON.text);
@@ -306,7 +305,7 @@ class JSONState extends State<JSON> {
                       }
                     ),
                     FlatButton(
-                      child: Text('Cancel'),
+                      child: Text(materialLoc.cancelButtonLabel),
                       onPressed: () {
                         Navigator.pop(context, null);
                       }

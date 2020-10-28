@@ -10,8 +10,8 @@
 //9. use icons as e.g. CustomIcons.wb_25
 
 import 'package:flutter/material.dart';
-import 'pdu.dart';
-import 'custom_icons_icons.dart';
+import 'package:zcon/pdu.dart';
+import 'package:zcon/custom_icons_icons.dart';
 
 enum AColor { neutral, green, yellow, red }
 

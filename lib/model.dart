@@ -1,8 +1,8 @@
 import 'package:scoped_model/scoped_model.dart';
-import 'devstate.dart';
-import 'i18n.dart';
-import 'nv.dart';
-import 'pref.dart';
+import 'package:zcon/devstate.dart';
+import 'package:zcon/i18n.dart';
+import 'package:zcon/nv.dart';
+import 'package:zcon/pref.dart';
 
 
 enum CommonModelEvents {

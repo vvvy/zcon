@@ -1,5 +1,5 @@
-import 'pdu.dart';
-import 'model.dart';
+import 'package:zcon/pdu.dart';
+import 'package:zcon/model.dart';
 
 typedef void ErrorF(String message);
 typedef void UpdateHook();
