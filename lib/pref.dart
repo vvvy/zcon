@@ -14,14 +14,20 @@ const
   k_localeCode = 'localeCode',
   k_config = 'config';
 
-Future<List<String>> readConfig() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getStringList(k_config);
+
+class ViewConfig {
+  final List<String> views;
+  ViewConfig(this.views);
 }
 
-Future<void> writeConfig(List<String> configRaw) async {
+Future<ViewConfig> readViewConfig() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  prefs.setStringList(k_config, configRaw);
+  return ViewConfig(prefs.getStringList(k_config));
+}
+
+Future<void> writeViewConfig(ViewConfig viewConfig) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  prefs.setStringList(k_config, viewConfig.views);
 }
 
 /// Returns the app config as a json-serialized string.
@@ -58,8 +64,11 @@ class Settings {
   final String username;
   final String password;
 
+  /// Interval between successive incremental updates
   final int intervalMainS;
+  /// Interval between retries during error
   final int intervalErrorRetryS;
+  /// Interval between a device command and the update (refresh) that follows it
   final int intervalUpdateS;
 
   final OverriddenLocaleCode localeCode;

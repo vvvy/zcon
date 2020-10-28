@@ -3,6 +3,7 @@ import 'pdu.dart';
 import 'pref.dart';
 import 'devlist.dart';
 import 'constants.dart';
+import 'model.dart';
 
 //------------------------------------------------------------------------------
 
@@ -74,7 +75,7 @@ abstract class DevStateNest {
 }
 
 abstract class DevState {
-  final DevStateNest parent;
+  final MainModel _model;
   final DevListController _dlc;
   final AlertBuilder _alertBuilder;
   bool _isLoading;
@@ -87,19 +88,22 @@ abstract class DevState {
     _dlc.current = current;
     //TODO move _current under separate persistence key
     // (so we don't write entire config when moving between views)
-    writeConfig(_dlc.makeConfig()).then((_) => parent.setDevState(this));
+    _model.submit(ViewConfigUpdate(_dlc.makeConfig()));
+    //writeConfig(_dlc.makeConfig()).then((_) => parent.setDevState(this));
   }
   bool get listsOnline => _dlc.isOnline;
   bool get isListEditable => _dlc.isListEditable;
   List<ReorderListItem<String>> startEditList() => _dlc.startEditList();
   void endEditList(List<ReorderListItem<String>> result) {
     _dlc.endEditList(result);
-    writeConfig(_dlc.makeConfig()).then((_) => parent.setDevState(this));
+    _model.submit(ViewConfigUpdate(_dlc.makeConfig()));
+    //writeConfig(_dlc.makeConfig()).then((_) => parent.setDevState(this));
   }
   List<ReorderListItem<int>> startEditMaster() => _dlc.startEditMaster();
   void endEditMaster(List<ReorderListItem<int>> result) {
     _dlc.endEditMaster(result);
-    writeConfig(_dlc.makeConfig()).then((_) => parent.setDevState(this));
+    _model.submit(ViewConfigUpdate(_dlc.makeConfig()));
+    //writeConfig(_dlc.makeConfig()).then((_) => parent.setDevState(this));
   }
   DevView getDeviceView(PopupF popupF);
   List<Alert> get alerts => _alertBuilder.alertList;
@@ -109,10 +113,7 @@ abstract class DevState {
   }
   void tryUpdateNow();
   void cleanup();
-  DevState({DevStateNest parent, bool isLoading, bool updateNeeded}):
-        parent = parent,
-        _isLoading = isLoading,
-        _updateNeeded = updateNeeded,
+  DevState(this._model, this._isLoading, this._updateNeeded):
         _alertBuilder = AlertBuilder(
             failedFilterId: DevListController.getTypeId("Failed"),
             batteryFilterId: DevListController.getTypeId("Battery"),
@@ -121,7 +122,7 @@ abstract class DevState {
         _dlc = new DevListController();
 
   DevState.clone(DevState prev):
-        parent = prev.parent,
+        _model = prev._model,
         _isLoading = prev._isLoading,
         _updateNeeded = prev._updateNeeded,
         _alertBuilder = prev._alertBuilder,
@@ -156,12 +157,42 @@ class DevStateNonEmpty extends DevState {
       _popupF(message);
   }
 
-  void _devUpdate() {
+  void _devUpdate() async {
+    /*final settings = _model.settings;
+    if (settings == null) {
+      print("ERROR: DevStateNonEmpty: unable to update, settings == null");
+      return;
+    }*/
     print("Starting incremental update");
     _isLoading = true;
-    parent.setDevState(this);
+    //parent.setDevState(this);
+    _model.submit(CommonModelEvents.UpdateUI);
 
-    fetch<Devices>("?since=${_devices.updateTime}")
+    try {
+      final ds = await fetch<Devices>("?since=${_devices.updateTime}", _model.settings);
+      print("Incremental update ok, n=${ds.devices.length}");
+      _isLoading = false;
+      _errorCount = 0;
+      _devices = _devices.merge(ds);
+      _alertBuilder.processDevices(_devices.devices);
+      _dlc.applyDevices(
+          _devices.devices, rebuildHint: _devices.structureChanged);
+      _model.submit(CommonModelEvents.UpdateUI);
+      _setTimer();
+    } catch(err) {
+      print("Incremental update failed, err=$err");
+      _isLoading = false;
+      if (_errorCount == Constants.maxErrorRetries) {
+        _model.submit(DevStateEmpty(this, error: err.toString()));
+      } else {
+        if (_errorCount == 0)
+          popup("Communications error (will retry soon): $err");
+        _errorCount += 1;
+        _setTimer();
+      }
+    }
+    /*
+    fetch<Devices>("?since=${_devices.updateTime}", settings)
       .then((ds) {
         print("Incremental update ok, n=${ds.devices.length}");
         _isLoading = false;
@@ -169,13 +200,13 @@ class DevStateNonEmpty extends DevState {
         _devices = _devices.merge(ds);
         _alertBuilder.processDevices(_devices.devices);
         _dlc.applyDevices(_devices.devices, rebuildHint: _devices.structureChanged);
-        parent.setDevState(this);
+        _model.submit(CommonModelEvents.UpdateUI);
         _setTimer();
       }).catchError((err) {
         print("Incremental update failed, err=$err");
         _isLoading = false;
         if (_errorCount == Constants.maxErrorRetries) {
-          parent.setDevState(DevStateEmpty(this, error: err.toString()));
+          _model.submit(DevStateEmpty(this, error: err.toString()));
         } else {
           if (_errorCount == 0)
             popup("Communications error (will retry soon): $err");
@@ -183,12 +214,18 @@ class DevStateNonEmpty extends DevState {
           _setTimer();
         }
       });
+    */
   }
 
   void _setTimer() async {
     if (_devRefreshT != null)
       _devRefreshT.cancel();
-    Settings settings = await readSettings();
+    //Settings settings = await readSettings();
+    final settings = _model.settings;
+    if (settings == null) {
+      print("ERROR: DevStateNonEmpty: unable to update, settings == null (in _setTimer())");
+      return;
+    }
     int s;
     if (_updateNeeded)
       s = settings.intervalUpdateS;
@@ -211,7 +248,6 @@ class DevStateNonEmpty extends DevState {
   void cleanup() {
     if (_devRefreshT != null)
       _devRefreshT.cancel();
-    //_devicesF = null;
   }
 }
 
@@ -223,41 +259,63 @@ class DevStateEmpty extends DevState {
         error = error,
         super.clone(origin) {
     _dlc.applyDevices(null, rebuildHint: true);
-    Future.microtask(() => _init());
+    initCond();
   }
 
-  DevStateEmpty.init(DevStateNest parent):
+  DevStateEmpty.init(MainModel model):
         error = null,
-        super(parent: parent, isLoading: false, updateNeeded: false) {
-    Future.microtask(() => _init());
+        super(model, false, false) {
+    initCond();
   }
 
   DevStateEmpty.init2(DevState origin):
         error = null,
         super.clone(origin) {
-    Future.microtask(() => _init());
+    initCond();
   }
 
-  void _init() {
-    if (error == null) {
-      print("Starting full update");
-      _isLoading = true;
-      parent.setDevState(this);
-      readConfig().then((ls) => _dlc.parseConfig(ls));
-      devicesF = fetch<Devices>("")
-        .then((ds) {
-          print("Full update ok, n=${ds.devices.length}");
-          _isLoading = false;
-          error = null;
-          _alertBuilder.processDevices(ds.devices);
-          parent.setDevState(DevStateNonEmpty(this, devices: ds));
-        }).catchError((err) {
-          print("Full update failed, err=$err");
-          _isLoading = false;
-          error = err.toString();
-          parent.setDevState(this);
-        });
-    }
+  void initCond() {
+    if (_model.settings != null && _model.viewConfig != null && error == null)
+      Future.microtask(() => _init(_model.settings, _model.viewConfig));
+  }
+
+  void _init(Settings settings, ViewConfig viewConfig) async {
+    print("Starting full update");
+    _isLoading = true;
+    _model.submit(CommonModelEvents.UpdateUI);
+    _dlc.parseConfig(viewConfig);
+
+    devicesF = () async {
+      try {
+        final ds = await fetch<Devices>("", settings);
+        print("Full update ok, n=${ds.devices.length}");
+        _isLoading = false;
+        error = null;
+        _alertBuilder.processDevices(ds.devices);
+        _model.submit(DevStateNonEmpty(this, devices: ds));
+      } catch(err) {
+        print("Full update failed, err=$err");
+        _isLoading = false;
+        error = err.toString();
+        _model.submit(CommonModelEvents.UpdateUI);
+      }
+    }();
+
+    /*
+    devicesF = fetch<Devices>("", settings)
+      .then((ds) {
+        print("Full update ok, n=${ds.devices.length}");
+        _isLoading = false;
+        error = null;
+        _alertBuilder.processDevices(ds.devices);
+        _model.submit(DevStateNonEmpty(this, devices: ds));
+      }).catchError((err) {
+        print("Full update failed, err=$err");
+        _isLoading = false;
+        error = err.toString();
+        _model.submit(CommonModelEvents.UpdateUI);
+      });
+     */
   }
 
   @override

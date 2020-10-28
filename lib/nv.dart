@@ -1,4 +1,5 @@
 import 'pdu.dart';
+import 'model.dart';
 
 typedef void ErrorF(String message);
 typedef void UpdateHook();
@@ -109,9 +110,8 @@ final Map<String, NVGen> nvForType  = {
 };
 
 class NVController {
-  UpdateHook _updateHook;
-
-  void setUpdateHook(UpdateHook updateHook) { _updateHook = updateHook; }
+  NVController(this.model);
+  final MainModel model;
 
   NV getNV(Device d) {
     NVGen f = nvForType[d.deviceType];
@@ -119,13 +119,21 @@ class NVController {
     return f(this, d);
   }
 
-  void exec(String c0, String c1, String c2, ErrorF errorF) {
+  void exec(String c0, String c1, String c2, ErrorF errorF) async {
     print("Exec: '$c0/$c1/$c2'");
-    fetch<Null>("$c0/$c1/$c2")
+    try {
+      final _ = await fetch<Null>("$c0/$c1/$c2", model.settings);
+      print("Exec ok");
+      model.submit(CommonModelEvents.RemoteReloadRequest);
+    } catch (err) { errorF("$err"); }
+
+    /*
+    fetch<Null>("$c0/$c1/$c2", model.settings)
       .then((n) {
         print("Exec ok");
-        if (_updateHook != null) _updateHook();
+        model.submit(CommonModelEvents.RemoteReloadRequest);
       })
       .catchError((err) => errorF("$err"));
+     */
   }
 }

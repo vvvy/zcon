@@ -1,4 +1,5 @@
 import 'pdu.dart';
+import 'pref.dart';
 //------------------------------------------------------------------------------
 
 abstract class DevList {
@@ -331,7 +332,7 @@ class DevListController extends AbstractDevListController {
     }
   }
 
-  List<String> makeConfig() {
+  ViewConfig makeConfig() {
     var l = <String>[];
     l.add("16");
     l.add(_current.toString());
@@ -347,16 +348,18 @@ class DevListController extends AbstractDevListController {
       }
     }
     //print("w cfg: $l");
-    return l;
+    return ViewConfig(l);
   }
 
-  void parseConfig(List<String> configRaw) {
+  void parseConfig(ViewConfig viewConfig) {
     int pos = -1;
     List<int> master;
     List<int> configPos;
     List<List<String>> config;
     int cnt;
     int ival;
+
+    final configRaw = viewConfig.views;
 
     if (configRaw != null) {
       final termS = configRaw.fold(_S.ver, (s, v) {

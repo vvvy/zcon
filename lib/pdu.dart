@@ -160,8 +160,7 @@ String joinPaths(String a, String b) {
 //https://dacha.vybornov.name/ZAutomation/api/v1/devices?since=1543949982
 //{"data":{"structureChanged":false,"updateTime":1543949984,"devices":[]},"code":200,"message":"200 OK","error":null}
 
-Future<T> fetch<T>(String p) async {
-  Settings settings = await readSettings();
+Future<T> fetch<T>(String p, Settings settings) async {
   if (settings.url.isEmpty) return Future.error("URL not set - please set it via settings");
   HttpClient client = new HttpClient();
   var url = joinPaths(joinPaths(settings.url, "ZAutomation/api/v1/devices"), p);

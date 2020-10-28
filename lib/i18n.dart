@@ -148,3 +148,40 @@ class OverriddenWidgetsDelegate extends LocalizationsDelegate<WidgetsLocalizatio
     return (_overriddenLocale != loc) ? OverriddenWidgetsDelegate(loc) : this;
   }
 }
+
+
+class LocaleSupport {
+  var l10nsDelegate = OverriddenL10nsDelegate(null);
+  var materialsDelegate = OverriddenMaterialDelegate(null);
+  var widgetsDelegate = OverriddenWidgetsDelegate(null);
+
+  List<LocalizationsDelegate<dynamic>> get list =>
+      [l10nsDelegate, materialsDelegate, widgetsDelegate, L10nsDelegate.delegate];
+
+  /// Handle possible locale change after settings dialog
+  ///
+  /// returns true if notifyListeners needed
+  bool setLocale(OverriddenLocaleCode localeCode) {
+    var nl = false;
+    {
+      final newDelegate = l10nsDelegate.fromCode(localeCode);
+      if (newDelegate != l10nsDelegate) {
+        l10nsDelegate = newDelegate;
+        nl = true;
+      }
+    }{
+      final newDelegate = materialsDelegate.fromCode(localeCode);
+      if (newDelegate != materialsDelegate) {
+        materialsDelegate = newDelegate;
+        nl = true;
+      }
+    }{
+      final newDelegate = widgetsDelegate.fromCode(localeCode);
+      if (newDelegate != widgetsDelegate) {
+        widgetsDelegate = newDelegate;
+        nl = true;
+      }
+    }
+    return nl;
+  }
+}
