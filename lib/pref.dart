@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zcon/devlist.dart';
 import 'dart:convert';
 
 import 'package:zcon/i18n.dart';
@@ -12,6 +13,7 @@ const
   k_intervalErrorRetryS = 'intervalErrorRetryS',
   k_intervalUpdateS = 'intervalUpdateS',
   k_localeCode = 'localeCode',
+  k_visLevel = 'visLevel',
   k_config = 'config';
 
 class ViewConfig {
@@ -69,15 +71,17 @@ class Settings {
   final int intervalErrorRetryS;
   /// Interval between a device command and the update (refresh) that follows it
   final int intervalUpdateS;
-
+  /// Language setting
   final OverriddenLocaleCode localeCode;
-
+  /// Device visibility settting
+  final VisLevel visLevel;
   Settings({
     this.url, this.username, this.password,
     this.intervalMainS: _intervalMainS,
     this.intervalErrorRetryS: _intervalErrorRetryS,
     this.intervalUpdateS: _intervalUpdateS,
-    this.localeCode: OverriddenLocaleCode.None
+    this.localeCode: OverriddenLocaleCode.None,
+    this.visLevel: VisLevel.All
   });
 }
 
@@ -90,7 +94,11 @@ Future<Settings> readSettings() async {
       intervalMainS: prefs.getInt(k_intervalMainS) ?? _intervalMainS,
       intervalErrorRetryS: prefs.getInt(k_intervalErrorRetryS) ?? _intervalErrorRetryS,
       intervalUpdateS: prefs.getInt(k_intervalUpdateS) ?? _intervalUpdateS,
-      localeCode: OverriddenLocaleCodeSerDe.de(prefs.getString(k_localeCode)) ?? OverriddenLocaleCode.None
+      localeCode: OverriddenLocaleCodeSerDe.de(prefs.getString(k_localeCode)) ?? OverriddenLocaleCode.None,
+      visLevel: () {
+        final l = prefs.getInt(k_visLevel) ?? 0;
+        return VisLevel.values[(l >= 0 && l < VisLevel.values.length) ? l : 0];
+      }()
   );
 }
 
@@ -103,6 +111,7 @@ Future<void> writeSettings(Settings settings) async {
   await prefs.setInt(k_intervalErrorRetryS, settings.intervalErrorRetryS);
   await prefs.setInt(k_intervalUpdateS, settings.intervalUpdateS);
   await prefs.setString(k_localeCode, OverriddenLocaleCodeSerDe.ser(settings.localeCode));
+  await prefs.setInt(k_visLevel, settings.visLevel.index);
 }
 
 typedef Future<void> FVC(BuildContext context);
@@ -116,16 +125,14 @@ class Preferences extends StatefulWidget {
     return PreferencesState(_initSettings, _masterEditor, _viewEditor);
   }
 
-  Preferences(Settings settings, FVC masterEditor, FVC viewEditor):
-        _initSettings = settings,
-        _masterEditor = masterEditor,
-        _viewEditor = viewEditor;
+  Preferences(this._initSettings, this._masterEditor, this._viewEditor);
 }
 
 class PreferencesState extends State<Preferences> {
   final Settings initSettings;
   final FVC _masterEditor, _viewEditor;
   OverriddenLocaleCode _localeCode;
+  VisLevel _visLevel;
 
   final
       cUsername = TextEditingController(),
@@ -135,16 +142,18 @@ class PreferencesState extends State<Preferences> {
 
   final _formKey = GlobalKey<FormState>();
 
-  PreferencesState(this.initSettings, this._masterEditor, this._viewEditor);
-
-  @override
-  void initState() {
-    super.initState();
+  PreferencesState(this.initSettings, this._masterEditor, this._viewEditor) {
     cUrl.text = initSettings.url;
     cUsername.text = initSettings.username;
     cPassword.text = initSettings.password;
     cIntervalMainS.text = initSettings.intervalMainS.toString();
     _localeCode = initSettings.localeCode;
+    _visLevel = initSettings.visLevel;
+  }
+
+  @override
+  void initState() {
+    super.initState();
   }
 
   static const _boldFont = TextStyle(fontWeight: FontWeight.bold);
@@ -206,6 +215,15 @@ class PreferencesState extends State<Preferences> {
                   ),
                   Divider(),
                   Text(myLoc.advanced, style: _boldFont),
+                  Text(myLoc.visLevel),
+                  DropdownButtonFormField(items: <DropdownMenuItem<VisLevel>>[
+                    DropdownMenuItem<VisLevel>(value: VisLevel.Visible, child: Text(myLoc.visVisible)),
+                    DropdownMenuItem<VisLevel>(value: VisLevel.Invisible, child: Text(myLoc.visHidden)),
+                    DropdownMenuItem<VisLevel>(value: VisLevel.All, child: Text(myLoc.visAll)),
+                  ],
+                      value:  _visLevel,
+                      onChanged: (value) => setState(() { _visLevel = value; })
+                  ),
                   Text(myLoc.updateIntervalSeconds),
                   TextFormField(
                     autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -238,7 +256,8 @@ class PreferencesState extends State<Preferences> {
                                       username: cUsername.text,
                                       password: cPassword.text,
                                       intervalMainS: int.tryParse(cIntervalMainS.text) ?? _intervalMainS,
-                                      localeCode: _localeCode
+                                      localeCode: _localeCode,
+                                      visLevel: _visLevel
                                   ));
                                 }
                               },

@@ -21,13 +21,16 @@ class L10ns {
     'viewSettings': ['View settings', 'Настойки представлений'],
     'editViewList': ['Edit view list', 'Редактировать список представлений'],
     'editCurrentView': ['Edit current view', 'Редактировать текущее представление'],
-
     'updateIntervalSeconds': ['Update interval, seconds', 'Интервал обновления (сек)'],
+    'visLevel': ['Device visibility level', 'Уровень видимости устройств'],
+    'visVisible': ['Visible', 'Видимые'],
+    'visHidden': ['Hidden', 'Скрытые'],
+    'visAll': ['All', 'Все'],
     'intGt5': ['Must be an int >= 5', 'Должно быть целым >= 5'],
     'inputRequired': ['Please enter value', 'Обязательное поле'],
     'jsonConfig': ['JSON config', 'Конфигурация (JSON)'],
     'invalidJson': ['Invalid JSON', 'Невалидный JSON'],
-    'settings': ['settings', 'Настройки'],
+    'settings': ['Settings', 'Настройки'],
     'editConfigAdvanced': ['Edit config (advanced)', 'Конфигурация (для продвинутых)'],
     'alerts': ['Alerts', 'Оповещения'],
     'reorderHint': [
@@ -40,6 +43,7 @@ class L10ns {
     'toBottom': ['To bottom', 'В конец'],
     'open': ['Open', 'ОТКР'],
     'closed': ['Closed', 'ЗАКР'],
+    //'': ['', ''],
     //'': ['', ''],
     //'': ['', ''],
     //'': ['', ''],
@@ -118,6 +122,9 @@ class L10ns {
 //  String get ok => _localizedValues['ok'][_offset];
 //  String get cancel => _localizedValues['cancel'][_offset];
   String get reload => _localizedValues['reload'][_offset];
+  String get url => _localizedValues['url'][_offset];
+  String get userName => _localizedValues['userName'][_offset];
+  String get password => _localizedValues['password'][_offset];
   String get english => _localizedValues['english'][_offset];
   String get russian => _localizedValues['russian'][_offset];
   String get systemDefined => _localizedValues['systemDefined'][_offset];
@@ -141,11 +148,14 @@ class L10ns {
 
   String get open => _localizedValues['open'][_offset];
   String get closed => _localizedValues['closed'][_offset];
-  //String get ZZZ => _localizedValues['ZZZ'][_offset];
+  String get visLevel => _localizedValues['visLevel'][_offset];
+  String get visVisible => _localizedValues['visVisible'][_offset];
+  String get visHidden => _localizedValues['visHidden'][_offset];
+  String get visAll => _localizedValues['visAll'][_offset];
 
-  String get url => _localizedValues['url'][_offset];
-  String get userName => _localizedValues['userName'][_offset];
-  String get password => _localizedValues['password'][_offset];
+  //String get ZZZ => _localizedValues['ZZZ'][_offset];
+  //String get ZZZ => _localizedValues['ZZZ'][_offset];
+  //String get ZZZ => _localizedValues['ZZZ'][_offset];
 
   String Function(String) get error => _error[_offset];
   String Function(String) get errorNL => _errorNL[_offset];

@@ -15,13 +15,13 @@ abstract class DevView { }
 class DevViewFull extends DevView {
   final DevList devices;
   final bool isLoading;
-  DevViewFull(DevList devices, bool isLoading): devices = devices, isLoading = isLoading;
+  DevViewFull(this.devices, this.isLoading);
 }
 
 class DevViewEmpty extends DevView {
   final String error;
   final bool isLoading;
-  DevViewEmpty(String error, bool isLoading): error = error, isLoading = isLoading;
+  DevViewEmpty(this.error, this.isLoading);
 }
 
 //------------------------------------------------------------------------------
@@ -139,12 +139,11 @@ class DevStateNonEmpty extends DevState {
   int _errorCount;
   PopupF _popupF;
 
-
   DevStateNonEmpty(DevState origin, {Devices devices}):
         _devices = devices,
         super.clone(origin)
   {
-    _dlc.applyDevices(devices.devices, VisLevel.All, rebuildHint: true);
+    _dlc.applyDevices(devices.devices, _model.settings.visLevel, rebuildHint: true);
     Future.microtask(() => _init());
   }
 
@@ -161,11 +160,6 @@ class DevStateNonEmpty extends DevState {
   }
 
   void _devUpdate() async {
-    /*final settings = _model.settings;
-    if (settings == null) {
-      print("ERROR: DevStateNonEmpty: unable to update, settings == null");
-      return;
-    }*/
     print("Starting incremental update");
     _isLoading = true;
     //parent.setDevState(this);
@@ -179,7 +173,8 @@ class DevStateNonEmpty extends DevState {
       _devices = _devices.merge(ds);
       _alertBuilder.processDevices(_devices.devices);
       _dlc.applyDevices(
-          _devices.devices, VisLevel.All, rebuildHint: _devices.structureChanged);
+          _devices.devices, _model.settings.visLevel, rebuildHint: _devices.structureChanged
+      );
       _model.submit(CommonModelEvents.UpdateUI);
       _setTimer();
     } catch(err) {
@@ -194,30 +189,6 @@ class DevStateNonEmpty extends DevState {
         _setTimer();
       }
     }
-    /*
-    fetch<Devices>("?since=${_devices.updateTime}", settings)
-      .then((ds) {
-        print("Incremental update ok, n=${ds.devices.length}");
-        _isLoading = false;
-        _errorCount = 0;
-        _devices = _devices.merge(ds);
-        _alertBuilder.processDevices(_devices.devices);
-        _dlc.applyDevices(_devices.devices, rebuildHint: _devices.structureChanged);
-        _model.submit(CommonModelEvents.UpdateUI);
-        _setTimer();
-      }).catchError((err) {
-        print("Incremental update failed, err=$err");
-        _isLoading = false;
-        if (_errorCount == Constants.maxErrorRetries) {
-          _model.submit(DevStateEmpty(this, error: err.toString()));
-        } else {
-          if (_errorCount == 0)
-            popup("Communications error (will retry soon): $err");
-          _errorCount += 1;
-          _setTimer();
-        }
-      });
-    */
   }
 
   void _setTimer() async {
@@ -261,7 +232,7 @@ class DevStateEmpty extends DevState {
   DevStateEmpty(DevState origin, {String error}):
         error = error,
         super.clone(origin) {
-    _dlc.applyDevices(null, VisLevel.All, rebuildHint: true);
+    _dlc.applyDevices(null, _model.settings.visLevel, rebuildHint: true);
     initCond();
   }
 
@@ -303,22 +274,6 @@ class DevStateEmpty extends DevState {
         _model.submit(CommonModelEvents.UpdateUI);
       }
     }();
-
-    /*
-    devicesF = fetch<Devices>("", settings)
-      .then((ds) {
-        print("Full update ok, n=${ds.devices.length}");
-        _isLoading = false;
-        error = null;
-        _alertBuilder.processDevices(ds.devices);
-        _model.submit(DevStateNonEmpty(this, devices: ds));
-      }).catchError((err) {
-        print("Full update failed, err=$err");
-        _isLoading = false;
-        error = err.toString();
-        _model.submit(CommonModelEvents.UpdateUI);
-      });
-     */
   }
 
   @override
