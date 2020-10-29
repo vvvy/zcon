@@ -2,6 +2,15 @@ import 'package:zcon/pdu.dart';
 import 'package:zcon/pref.dart';
 //------------------------------------------------------------------------------
 
+enum VisLevel {
+  /// only visible items
+  Visible,
+  /// show invisible items but not permanently hidden
+  Invisible,
+  /// Everything including permanently hidden
+  All
+}
+
 abstract class DevList {
   Device get(int index);
   int length();
@@ -140,7 +149,7 @@ abstract class AbstractDevListController {
   /// whether the current filter is editable
   bool get isListEditable;
   /// apply a new or an updated device list -- called whenever device state has changed
-  void applyDevices(List<Device> dev, {bool rebuildHint});
+  void applyDevices(List<Device> dev, VisLevel visLevel, {bool rebuildHint});
   /// apply configuration -- the data are usually read from persistent storage
   void applyConfig(int pos, List<int> master, List<int> configPos, List<List<String>> config);
   /// current filter id (same as position in the master list)
@@ -276,8 +285,13 @@ class DevListController extends AbstractDevListController {
   }
 
   @override
-  void applyDevices(List<Device> dev, {bool rebuildHint}) {
-    _devices = dev;
+  void applyDevices(List<Device> dev, VisLevel visLevel, {bool rebuildHint}) {
+    if (dev == null || visLevel == VisLevel.All)
+      _devices = dev;
+    else if (visLevel == VisLevel.Invisible)
+      _devices = dev.where((d) => !d.permanentlyHidden).toList();
+    else
+      _devices = dev.where((d) => (!d.permanentlyHidden && d.visibility)).toList();
     if (rebuildHint) _generation++;
   }
 

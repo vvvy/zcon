@@ -144,7 +144,7 @@ class DevStateNonEmpty extends DevState {
         _devices = devices,
         super.clone(origin)
   {
-    _dlc.applyDevices(devices.devices, rebuildHint: true);
+    _dlc.applyDevices(devices.devices, VisLevel.All, rebuildHint: true);
     Future.microtask(() => _init());
   }
 
@@ -179,7 +179,7 @@ class DevStateNonEmpty extends DevState {
       _devices = _devices.merge(ds);
       _alertBuilder.processDevices(_devices.devices);
       _dlc.applyDevices(
-          _devices.devices, rebuildHint: _devices.structureChanged);
+          _devices.devices, VisLevel.All, rebuildHint: _devices.structureChanged);
       _model.submit(CommonModelEvents.UpdateUI);
       _setTimer();
     } catch(err) {
@@ -261,7 +261,7 @@ class DevStateEmpty extends DevState {
   DevStateEmpty(DevState origin, {String error}):
         error = error,
         super.clone(origin) {
-    _dlc.applyDevices(null, rebuildHint: true);
+    _dlc.applyDevices(null, VisLevel.All, rebuildHint: true);
     initCond();
   }
 

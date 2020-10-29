@@ -172,43 +172,20 @@ Future<T> fetch<T>(String p, Settings settings) async {
   if (settings.username != "")
     client.addCredentials(uri, "",
         new HttpClientBasicCredentials(settings.username, settings.password));
-
-  /*
-  final request = await client.getUrl(uri);
-  final response = await request.close();
+  HttpClientRequest request = await client.getUrl(uri);
+  HttpClientResponse response = await request.close();
   if (response.statusCode == 200) {
     // If the call to the server was successful, parse the JSON
-    final jsonS = await response.transform(utf8.decoder).join(" ");
-    var zr = ZAResponse<T>.fromJson(json.decode(jsonS));
-    if (zr.code != 200)
-      return Future<T>.error("ZA app error: " + zr.message);
-    //print("ZR data: " +(zr.data as Device).metrics.level.toString());
-    return Future<T>.value(zr.data);
+    return response.transform(utf8.decoder).join(" ").then((jsonS){
+      var zr = ZAResponse<T>.fromJson(json.decode(jsonS));
+      if (zr.code != 200) return Future<T>.error("ZA app error: " + zr.message);
+      //print("ZR data: " +(zr.data as Device).metrics.level.toString());
+      return Future<T>.value(zr.data);
+    });
   } else {
     // If that call was not successful, throw an error.
     return Future<T>.error('Failed to process ZA response: ' + response.statusCode.toString());
   }
-  */
-  final response = await client.getUrl(
-      uri
-  ).then((HttpClientRequest request) =>
-      request.close()
-  ).then((HttpClientResponse response) {
-    if (response.statusCode == 200) {
-      // If the call to the server was successful, parse the JSON
-
-      return response.transform(utf8.decoder).join(" ").then((jsonS){
-        var zr = ZAResponse<T>.fromJson(json.decode(jsonS));
-        if (zr.code != 200) return Future<T>.error("ZA app error: " + zr.message);
-        //print("ZR data: " +(zr.data as Device).metrics.level.toString());
-        return Future<T>.value(zr.data);
-        });
-    } else {
-      // If that call was not successful, throw an error.
-      return Future<T>.error('Failed to process ZA response: ' + response.statusCode.toString());
-  }
-  });
-  return response;
 }
 
 T dataFromJson<T>(dynamic json) {

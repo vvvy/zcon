@@ -9,8 +9,6 @@
 * Better Reload icon in appbar (animated)
 * Add FCM support (compatible with ZWay)
 * Add Status to Drawer (?)
-* i18n, Russian strings
-
 
  
 ## Version 1.0.4+5
@@ -22,6 +20,9 @@
  - Failed devices
  - T below 5C and above 30C
 * Add Edit config (via JSON)
+* i18n, Russian strings
+
+Under the hood: moved to [scoped_model package](https://pub.dev/packages/scoped_model)
  
 ## Version 1.0.3+4
 
