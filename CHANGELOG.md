@@ -4,7 +4,6 @@
 
 * Fix request abort on view change
 * Custom names for custom views
-* Handle visibility and permanently_hidden device attributes
 * Handle rooms (http://zway-server:8083/ZAutomation/api/v1/locations) and dashboard
 * Better Reload icon in appbar (animated)
 * Add FCM support (compatible with ZWay)
@@ -21,6 +20,7 @@
  - T below 5C and above 30C
 * Add Edit config (via JSON)
 * i18n, Russian strings
+* Handle visibility and permanently_hidden device attributes (via settings)
 
 Under the hood: moved to [scoped_model package](https://pub.dev/packages/scoped_model)
  
