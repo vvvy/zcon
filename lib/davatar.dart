@@ -70,7 +70,7 @@ Widget _windowBlind(dynamic level) {
     return _colorAvatar(Icon(CustomIcons.wb_50), AColor.yellow);
   if (level <= 75)
     return _colorAvatar(Icon(CustomIcons.wb_75), AColor.yellow);
-  if (level <= 100 || level == 255)
+  if (level <= 100 || level == 255 || level == 254/*Qubino*/)
     return _colorAvatar(Icon(CustomIcons.wb_99), AColor.yellow);
   return _colorAvatar(Icon(CustomIcons.wb_unknown), AColor.red);
 }
