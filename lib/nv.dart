@@ -36,7 +36,7 @@ class NVPushButton extends NV {
   static NV fromDev(NVController nvc, Device d) => NVPushButton(nvc, d.id);
 }
 
-class NVThermostatSetPoint extends NVUpdate {
+class NVThermostatSetPoint extends NV {
   final double value;
   final String title;
   void onSet(double newV, ErrorF errorF) {
