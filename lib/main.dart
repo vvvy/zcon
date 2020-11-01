@@ -79,24 +79,24 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
                           leading: Icon(Icons.refresh),
                           title: Text(matLoc(context).refreshIndicatorSemanticLabel),
                           onTap: () {
-                            mainModel.reload();
                             Navigator.pop(context);
+                            mainModel.reload();
                           }
                         ),
                         ListTile(
                           leading: Icon(Icons.settings),
                           title: Text(L10ns.of(context).settings),
                           onTap: () {
-                            _editSettings(context);
                             Navigator.pop(context);
+                            _editSettings(context);
                           },
                         ),
                         ListTile(
                           leading: Icon(Icons.edit),
                           title: Text(L10ns.of(context).editConfigAdvanced),
                           onTap: () {
-                            _editJSON(context);
                             Navigator.pop(context);
+                            _editJSON(context);
                           },
                         ),
                       if (mainModel.devState.alerts.isNotEmpty) Divider(),
@@ -106,8 +106,8 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
                           leading: Icon(Icons.warning, color: Colors.yellow),
                           title: Text(L10ns.of(context).alertText(alert)),
                           onTap: () {
-                            if (alert.filterId >= 0) mainModel.devState.setFilter(alert.filterId);
                             Navigator.pop(context);
+                            if (alert.filterId >= 0) mainModel.devState.setFilter(alert.filterId);
                           },
                         )
                       ],
@@ -147,7 +147,7 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
     String title = d.metrics.title;
     NV nv = mainModel.nvc.getNV(d);
     var notF = (String s) => Scaffold.of(context).showSnackBar(SnackBar(content: Text(s)));
-    var errorF = (String s) => notF(myLoc.error(s));
+    var errorF = (AppError err) => notF(myLoc.error(err));
 
     Widget trailing = (nv) {
       if (nv is NVShow) {
@@ -193,7 +193,9 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
   }
 
   Widget _buildMainView(BuildContext context, MainModel mainModel) {
-    var v = mainModel.devState.getDeviceView((s) => Scaffold.of(context).showSnackBar(SnackBar(content: Text(s))));
+    var v = mainModel.devState.getDeviceView((type, detail) => Scaffold.of(context).showSnackBar(
+        SnackBar(content: Text(L10ns.of(context).popup(type, detail)))
+    ));
     if (v is DevViewFull) {
       return ListView.separated(
           itemBuilder: (context, i) => _buildRow(v.devices.get(i), context, mainModel),
@@ -240,7 +242,7 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
       model.devState.endEditMaster(vs);
   }
 
-  void _editSettings(BuildContext context) async {
+  Future<void> _editSettings(BuildContext context) async {
     final mainModel = ScopedModel.of<MainModel>(context);
 
     FVC viewEditor =
@@ -264,7 +266,7 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
     }
   }
 
-  void _editJSON(BuildContext context) async {
+  Future<void> _editJSON(BuildContext context) async {
     final jsonS = await configToJson();
     print("starting json edit, config=$jsonS");
     final edited = await showDialog(context: context, builder: (context) => JSON(jsonS));

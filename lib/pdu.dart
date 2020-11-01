@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:zcon/i18n.dart';
 import 'package:zcon/pref.dart';
 
 class Metrics {
@@ -161,30 +162,32 @@ String joinPaths(String a, String b) {
 //{"data":{"structureChanged":false,"updateTime":1543949984,"devices":[]},"code":200,"message":"200 OK","error":null}
 
 Future<T> fetch<T>(String p, Settings settings) async {
-  if (settings.url.isEmpty) return Future.error("URL not set - please set it via settings");
+  if (settings.url.isEmpty) return Future.error(AppError.urlNeeded());
+    //Future.error("URL not set - please set it via settings");
   HttpClient client = new HttpClient();
   var url = joinPaths(joinPaths(settings.url, "ZAutomation/api/v1/devices"), p);
   print("Connecting to: $url");
   var uri = Uri.tryParse(url);
   if (uri == null) {
-    return Future.error("Invalid URL");
+    return Future.error(AppError.urlInvalid());
   }
   if (settings.username != "")
     client.addCredentials(uri, "",
         new HttpClientBasicCredentials(settings.username, settings.password));
   HttpClientRequest request = await client.getUrl(uri);
   HttpClientResponse response = await request.close();
+  //TODO if content-type is json, parse it even if statusCode != 200
   if (response.statusCode == 200) {
     // If the call to the server was successful, parse the JSON
+    ///TODO switch to async await
     return response.transform(utf8.decoder).join(" ").then((jsonS){
       var zr = ZAResponse<T>.fromJson(json.decode(jsonS));
-      if (zr.code != 200) return Future<T>.error("ZA app error: " + zr.message);
-      //print("ZR data: " +(zr.data as Device).metrics.level.toString());
+      if (zr.code != 200) return Future<T>.error(AppError.zaAppError(zr.code, zr.message));
       return Future<T>.value(zr.data);
     });
   } else {
     // If that call was not successful, throw an error.
-    return Future<T>.error('Failed to process ZA response: ' + response.statusCode.toString());
+    return Future<T>.error(AppError.zaHttpError(response.statusCode, response.reasonPhrase));
   }
 }
 
@@ -196,7 +199,7 @@ T dataFromJson<T>(dynamic json) {
   } else if (T == Null) {
     return Null() as T;
   } else {
-    throw new Exception("unknown type");
+    throw new Exception("dataFromJson: unknown type");
   }
 }
 

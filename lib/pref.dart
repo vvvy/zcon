@@ -1,8 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zcon/devlist.dart';
-import 'dart:convert';
-
 import 'package:zcon/i18n.dart';
 
 const

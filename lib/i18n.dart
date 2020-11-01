@@ -11,7 +11,7 @@ class L10ns {
 
   static L10ns of(BuildContext context) => Localizations.of<L10ns>(context, L10ns);
 
-  final/*static*/ Map<String, List<String>> _localizedValues = {
+  static final Map<String, List<String>> _localizedValues = {
     'reload': ['Reload', 'Перезагрузить'],
     'english': ['English', 'Английский'],
     'russian': ['Russian', 'Русский'],
@@ -43,6 +43,13 @@ class L10ns {
     'toBottom': ['To bottom', 'В конец'],
     'open': ['Open', 'ОТКР'],
     'closed': ['Closed', 'ЗАКР'],
+
+    //Error messages
+    AppError.k_urlNeeded: ['URL not set - please set it via settings', 'URL не установлена - необходимо установить через Настройки'],
+    AppError.k_urlInvalid: ['Invalid URL', 'URL не валиден'],
+    AppError.k_appPaused: ['Application paused', 'Приложение приостановлено'],
+    //'': ['', ''],
+    //'': ['', ''],
     //'': ['', ''],
     //'': ['', ''],
     //'': ['', ''],
@@ -52,14 +59,17 @@ class L10ns {
     'userName': ['User name', 'Имя пользователя'],
     'password': ['Password', 'Пароль'],
   };
-  final List<String Function(String)> _error =
-    [(msg) => "Error: $msg", (msg) => "Ошибка: $msg"];
-  final List<String Function(String)> _errorNL =
-    [(msg) => "ERROR:\n$msg", (msg) => "ОШИБКА:\n$msg"];
-  final List<String Function(String)> _activating =
-    [(title) => "Activating $title", (title) => "Активация: $title"];
-  final List<String Function(String)> _updating =
-    [(title) => "Updating $title", (title) => "Обновление: $title"];
+
+  static final Map<String, List<String Function(String)>> _localizedValuesFSS = {
+    'error': [(msg) => "Error: $msg", (msg) => "Ошибка: $msg"],
+    'errorNL': [(msg) => "ERROR:\n$msg", (msg) => "ОШИБКА:\n$msg"],
+    'commErrorTransient': [(msg) => "Communications error (will retry soon): $msg", (msg) => "Ошибка коммуникаций: $msg"],
+    'activating': [(title) => "Activating $title", (title) => "Активация: $title"],
+    'updating': [(title) => "Updating $title", (title) => "Обновление: $title"],
+    AppError.k_zaHttpError: [(msg) => "Z-Way API: HTTP $msg", (msg) => "API Z-Way: HTTP $msg"],
+    AppError.k_zaAppError: [(msg) => "Z-Way API: [Application] $msg", (msg) => "API Z-Way: [Приложение] $msg"],
+  };
+
   final List<String Function(String, bool)> _settingOnOff =
     [(title, isOn) => "Setting $title ${isOn?'on':'off'}", (title, isOn) => "$title => ${isOn?'ВКЛ':'выкл'}"];
   final List<String Function(String, dynamic)> _settingLevel =
@@ -157,10 +167,36 @@ class L10ns {
   //String get ZZZ => _localizedValues['ZZZ'][_offset];
   //String get ZZZ => _localizedValues['ZZZ'][_offset];
 
-  String Function(String) get error => _error[_offset];
-  String Function(String) get errorNL => _errorNL[_offset];
-  String Function(String) get activating => _activating[_offset];
-  String Function(String) get updating => _updating[_offset];
+  String _errorString(String Function(String) envelope, AppError err) {
+    if (_localizedValues.containsKey(err.errCode))
+      return envelope(_localizedValues[err.errCode][_offset]);
+    else if (_localizedValuesFSS.containsKey(err.errCode))
+      return envelope(_localizedValuesFSS[err.errCode][_offset](err.extraMessage));
+    else
+      return envelope(err.extraMessage);
+  }
+  String Function(AppError err) get error =>
+          (err) => _errorString(_localizedValuesFSS['error'][_offset], err);
+  String Function(AppError err) get errorNL =>
+          (err) => _errorString(_localizedValuesFSS['errorNL'][_offset], err);
+  //String Function(String) get error => _error[_offset];
+  //String Function(String) get errorNL => _localizedValuesFSS['errorNL'][_offset];
+
+  String Function(PopupType type, dynamic detail) get popup => (type, detail) {
+    switch(type) {
+      case PopupType.CommErrorTransient:
+        return _errorString(_localizedValuesFSS['commErrorTransient'][_offset], detail as AppError);
+      default:
+        print("ERROR: Unhandled PopupType in L10ns: $type");
+        return "[$type]";
+    }
+  };
+
+  String Function(String) get activating => _localizedValuesFSS['activating'][_offset];
+  String Function(String) get updating => _localizedValuesFSS['updating'][_offset];
+  //String Function(String) get errorNL => _errorNL[_offset];
+  //String Function(String) get activating => _activating[_offset];
+  //String Function(String) get updating => _updating[_offset];
   String Function(String, bool) get settingOnOff => _settingOnOff[_offset];
   String Function(String, dynamic) get settingLevel => _settingLevel[_offset];
   String Function(Duration) get elapsed => _elapsed[_offset];
@@ -318,6 +354,34 @@ class LocaleSupport {
       }
     }
     return nl;
+  }
+}
+
+class AppError {
+  final String errCode;
+  final String extraMessage;
+
+  static const k_urlNeeded = 'urlNeeded';
+  static const k_urlInvalid = 'urlInvalid';
+  static const k_appPaused = 'appPaused';
+  static const k_zaHttpError = 'zaHttpError';
+  static const k_zaAppError = 'zaAppError';
+
+//  static const k_ = '';
+//  static const k_ = '';
+//  static const k_ = '';
+
+  AppError(this.errCode, this.extraMessage);
+
+  AppError.urlNeeded(): this(k_urlNeeded, '');
+  AppError.urlInvalid(): this(k_urlInvalid, '');
+  AppError.appPaused(): this(k_appPaused, '');
+  AppError.zaHttpError(int statusCode, String reasonPhrase): this(k_zaHttpError, "$statusCode $reasonPhrase");
+  AppError.zaAppError(int code, String message): this(k_zaAppError, "$code $message");
+
+  factory AppError.convert(dynamic source) {
+    if (source is AppError) return source;
+    return AppError("unknown", source.toString());
   }
 }
 

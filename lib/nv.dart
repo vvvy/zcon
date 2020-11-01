@@ -1,7 +1,8 @@
 import 'package:zcon/pdu.dart';
 import 'package:zcon/model.dart';
+import 'package:zcon/i18n.dart';
 
-typedef void ErrorF(String message);
+typedef void ErrorF(AppError error);
 typedef void UpdateHook();
 
 abstract class NV {
@@ -125,15 +126,6 @@ class NVController {
       final _ = await fetch<Null>("$c0/$c1/$c2", model.settings);
       print("Exec ok");
       model.submit(CommonModelEvents.RemoteReloadRequest);
-    } catch (err) { errorF("$err"); }
-
-    /*
-    fetch<Null>("$c0/$c1/$c2", model.settings)
-      .then((n) {
-        print("Exec ok");
-        model.submit(CommonModelEvents.RemoteReloadRequest);
-      })
-      .catchError((err) => errorF("$err"));
-     */
+    } catch (err) { errorF(AppError.convert(err)); }
   }
 }

@@ -62,7 +62,7 @@ class MainModel extends Model {
   void submit(dynamic event) {
     print("submit $event");
     if (event == CommonModelEvents.AppPaused) {
-      setDevState(DevStateEmpty(devState, error: "Application paused"));
+      setDevState(DevStateEmpty(devState, error: AppError.appPaused()));
     } else if (event == CommonModelEvents.AppResumed) {
       setDevState(DevStateEmpty.init(this));
     } else if (event == CommonModelEvents.RemoteReloadRequest) {

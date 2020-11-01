@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:zcon/i18n.dart';
 import 'package:zcon/pdu.dart';
 import 'package:zcon/pref.dart';
 import 'package:zcon/devlist.dart';
@@ -7,8 +8,11 @@ import 'package:zcon/constants.dart';
 import 'package:zcon/model.dart';
 
 //------------------------------------------------------------------------------
+enum PopupType {
+  CommErrorTransient
+}
 
-typedef void PopupF(String message);
+typedef void PopupF(PopupType type, dynamic detail);
 
 abstract class DevView { }
 
@@ -19,7 +23,7 @@ class DevViewFull extends DevView {
 }
 
 class DevViewEmpty extends DevView {
-  final String error;
+  final AppError error;
   final bool isLoading;
   DevViewEmpty(this.error, this.isLoading);
 }
@@ -153,10 +157,9 @@ class DevStateNonEmpty extends DevState {
     return _dlc.isOnline ? DevViewFull(_dlc.list, _isLoading) : DevViewEmpty(null, _isLoading);
   }
 
-  void popup(String message) {
-    print("Popup: $message");
-    if (_popupF != null)
-      _popupF(message);
+  void popup(PopupType type, [AppError error]) {
+    print("Popup: $type $error");
+    if (_popupF != null) _popupF(type, error);
   }
 
   void _devUpdate() async {
@@ -181,10 +184,10 @@ class DevStateNonEmpty extends DevState {
       print("Incremental update failed, err=$err");
       _isLoading = false;
       if (_errorCount == Constants.maxErrorRetries) {
-        _model.submit(DevStateEmpty(this, error: err.toString()));
+        _model.submit(DevStateEmpty(this, error: AppError.convert(err)));
       } else {
         if (_errorCount == 0)
-          popup("Communications error (will retry soon): $err");
+          popup(PopupType.CommErrorTransient, AppError.convert(err));
         _errorCount += 1;
         _setTimer();
       }
@@ -226,10 +229,10 @@ class DevStateNonEmpty extends DevState {
 }
 
 class DevStateEmpty extends DevState {
-  String error;
+  AppError error;
   Future<void> devicesF;
 
-  DevStateEmpty(DevState origin, {String error}):
+  DevStateEmpty(DevState origin, {AppError error}):
         error = error,
         super.clone(origin) {
     _dlc.applyDevices(null, _model.settings.visLevel, rebuildHint: true);
@@ -270,14 +273,14 @@ class DevStateEmpty extends DevState {
       } catch(err) {
         print("Full update failed, err=$err");
         _isLoading = false;
-        error = err.toString();
+        error = AppError.convert(err);
         _model.submit(CommonModelEvents.UpdateUI);
       }
     }();
   }
 
   @override
-  DevView getDeviceView(PopupF popupF) {
+  DevView getDeviceView(PopupF _popupF) {
     return DevViewEmpty(error, _isLoading);
   }
 
