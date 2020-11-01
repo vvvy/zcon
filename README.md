@@ -1,6 +1,6 @@
-# zcon
+# ZConsole
 
-Mobile Z-Way console
+Mobile front end for Z-Way controller
 
 ## Building for Android
 

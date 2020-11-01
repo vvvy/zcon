@@ -24,6 +24,7 @@
 * i18n, Russian strings
 * Handle visibility and permanently_hidden device attributes (via settings)
 * Added splash screen
+* Changed app title to ZConsole
 
 Under the hood: moved to [scoped_model package](https://pub.dev/packages/scoped_model)
  

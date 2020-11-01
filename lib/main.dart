@@ -47,7 +47,7 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
     return ScopedModel<L10nModel>(
       model: _l10nModel,
       child: ScopedModelDescendant<L10nModel>(builder: (context, child, l10nModel) => MaterialApp(
-        title: "Z-Way Console",
+        title: "ZConsole",
         localizationsDelegates: [
           //app-specific localization delegates
           ...l10nModel.locales.list,
@@ -69,7 +69,7 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
                       padding: EdgeInsets.zero,
                       children: <Widget>[
                         DrawerHeader(
-                          child: Text('Z-Way Console (ZCon)', textScaleFactor: 1.5, style: TextStyle(color: Colors.white)),
+                          child: Text('ZConsole', textScaleFactor: 1.5, style: TextStyle(color: Colors.white)),
                           decoration: BoxDecoration(
                               color: Colors.blue,
                               image: const DecorationImage(image: AssetImage("assets/icon/lamp.png"))
