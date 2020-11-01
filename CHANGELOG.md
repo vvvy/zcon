@@ -3,6 +3,8 @@
 ## TODO
 
 * Fix request abort on view change
+* Better multilevel switch support (level change)
+* Make up Reorder view: fast scroll top/bottom, scrollbar(?), better organize content
 * Custom names for custom views
 * Handle rooms (http://zway-server:8083/ZAutomation/api/v1/locations) and dashboard
 * Better Reload icon in appbar (animated)
@@ -21,6 +23,7 @@
 * Add Edit config (via JSON)
 * i18n, Russian strings
 * Handle visibility and permanently_hidden device attributes (via settings)
+* Added splash screen
 
 Under the hood: moved to [scoped_model package](https://pub.dev/packages/scoped_model)
  
