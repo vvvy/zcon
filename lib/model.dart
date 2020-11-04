@@ -1,7 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:scoped_model/scoped_model.dart';
 import 'package:zcon/devstate.dart';
 import 'package:zcon/i18n.dart';
 import 'package:zcon/nv.dart';
+import 'package:zcon/pdu.dart';
 import 'package:zcon/pref.dart';
 
 
@@ -36,8 +38,18 @@ class MainModel extends Model {
     this.nvc = NVController(this);
   }
 
+  static MainModel of(BuildContext context, {rebuildOnChange: false}) =>
+      ScopedModel.of<MainModel>(context, rebuildOnChange: rebuildOnChange);
+
+  Widget scoped(Widget child) => ScopedModel<MainModel>(model: this, child: child);
+
   Settings get settings => _settings;
   ViewConfig get viewConfig => _viewConfig;
+
+  NV getNVbyLink(DeviceLink link, L10ns l10ns) {
+    final device = devState.getDeviceByLink(link);
+    return (device != null) ? nvc.getNV(device, l10ns) : null;
+  }
 
   void setDevState(DevState newDevState) {
     if (devState != newDevState && devState != null) devState.cleanup();

@@ -44,6 +44,14 @@ class L10ns {
     'open': ['Open', 'ОТКР'],
     'closed': ['Closed', 'ЗАКР'],
 
+    'goToPosition': ['Go to position', 'Перейти'],
+    'increase': ['Increase', 'Шаг вверх'],
+    'startUp': ['Start up', 'Начать движение вверх'],
+    'stop': ['Stop', 'Остановить'],
+    'startDown': ['Start down', 'Начать движение вниз'],
+    'decrease': ['Decrease', 'Шаг вниз'],
+
+
     //Error messages
     AppError.k_urlNeeded: ['URL not set - please set it via settings', 'URL не установлена - необходимо установить через Настройки'],
     AppError.k_urlInvalid: ['Invalid URL', 'URL не валиден'],
@@ -163,7 +171,13 @@ class L10ns {
   String get visHidden => _localizedValues['visHidden'][_offset];
   String get visAll => _localizedValues['visAll'][_offset];
 
-  //String get ZZZ => _localizedValues['ZZZ'][_offset];
+  String get goToPosition => _localizedValues['goToPosition'][_offset];
+  String get increase => _localizedValues['increase'][_offset];
+  String get startUp => _localizedValues['startUp'][_offset];
+  String get stop => _localizedValues['stop'][_offset];
+  String get startDown => _localizedValues['startDown'][_offset];
+  String get decrease => _localizedValues['decrease'][_offset];
+
   //String get ZZZ => _localizedValues['ZZZ'][_offset];
   //String get ZZZ => _localizedValues['ZZZ'][_offset];
 

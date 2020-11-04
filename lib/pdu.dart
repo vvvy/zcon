@@ -117,6 +117,26 @@ class Device {
   }
 }
 
+class DeviceLink {
+  final String _devId;
+  int _positionHint = -1;
+  DeviceLink(this._devId);
+
+  /// get the device by link, possibly updating _positionHint
+  Device getDevice(List<Device> devices) {
+    //if the device is still in its old position, return it immediately
+    if (_positionHint >= 0 && _positionHint < devices.length &&
+        devices[_positionHint].id == _devId) return devices[_positionHint];
+    //Search for the device
+    final pos = devices.indexWhere((dev) => dev.id == _devId);
+    if (pos >= 0) {
+      _positionHint = pos;
+      return devices [_positionHint];
+    }
+    return null;
+  }
+}
+
 class Devices {
   final bool structureChanged;
   final int updateTime;

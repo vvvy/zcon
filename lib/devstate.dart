@@ -100,6 +100,7 @@ abstract class DevState {
   }
   bool get listsOnline => _dlc.isOnline;
   bool get isListEditable => _dlc.isListEditable;
+  Device getDeviceByLink(DeviceLink link);
   List<ReorderListItem<String>> startEditList() => _dlc.startEditList();
   void endEditList(List<ReorderListItem<String>> result) {
     _dlc.endEditList(result);
@@ -214,14 +215,19 @@ class DevStateNonEmpty extends DevState {
     _devRefreshT = new Timer(Duration(seconds: s), () => _devUpdate());
   }
 
+  @override
+  Device getDeviceByLink(DeviceLink link) => link.getDevice(_devices.devices);
+
   void _init() {
     _setTimer();
   }
 
+  @override
   void tryUpdateNow() {
     if (!_isLoading) _setTimer();
   }
 
+  @override
   void cleanup() {
     if (_devRefreshT != null)
       _devRefreshT.cancel();
@@ -280,12 +286,15 @@ class DevStateEmpty extends DevState {
   }
 
   @override
-  DevView getDeviceView(PopupF _popupF) {
-    return DevViewEmpty(error, _isLoading);
-  }
+  DevView getDeviceView(PopupF _popupF) => DevViewEmpty(error, _isLoading);
 
+  @override
+  Device getDeviceByLink(DeviceLink link) => null;
+
+  @override
   void tryUpdateNow() { }
 
+  @override
   void cleanup() {
     devicesF = null;
   }

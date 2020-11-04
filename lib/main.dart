@@ -145,7 +145,7 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
   Widget _buildRow(Device d, BuildContext context, MainModel mainModel) {
     final myLoc = L10ns.of(context);
     String title = d.metrics.title;
-    NV nv = mainModel.nvc.getNV(d);
+    NV nv = mainModel.nvc.getNV(d, myLoc);
     var notF = (String s) => Scaffold.of(context).showSnackBar(SnackBar(content: Text(s)));
     var errorF = (AppError err) => notF(myLoc.error(err));
 
@@ -168,16 +168,10 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
           }
         });
       } else if (nv is NVSwitchMultilevel) {
-        return FlatButton(child: Text(nv.title), onPressed: () async {
-          final level = await showDialog(
+        return FlatButton(child: Text(nv.title), onPressed: () => showDialog(
               context: context,
-              builder: (context) => GetSwitchMultilevel(nv.value)
-          );
-          if (level != null) {
-            notF(myLoc.settingLevel(title, level));
-            nv.onSet(level as int, errorF);
-          }
-        });
+              builder: (context) => _mainModel.scoped(GetSwitchMultilevel(nv, errorF))
+          ));
       } else {
         return Text("?");
       }
@@ -217,7 +211,7 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
   }
 
   static Future<void> _viewEditor(BuildContext context) async {
-    final model = ScopedModel.of<MainModel>(context);
+    final model = MainModel.of(context);
     final vs = await showDialog<List<ReorderListItem<String>>>(
       context: context,
       builder: (context) => Reorder<ReorderListItem<String>>(
@@ -230,7 +224,7 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
   }
 
   static Future<void> _masterEditor(BuildContext context) async {
-    final model = ScopedModel.of<MainModel>(context);
+    final model = MainModel.of(context);
     final vs = await showDialog<List<ReorderListItem<int>>>(
         context: context,
         builder: (context) => Reorder<ReorderListItem<int>>(
@@ -243,7 +237,7 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
   }
 
   Future<void> _editSettings(BuildContext context) async {
-    final mainModel = ScopedModel.of<MainModel>(context);
+    final mainModel = MainModel.of(context);
 
     FVC viewEditor =
       mainModel.devState.listsOnline && mainModel.devState.isListEditable ?
@@ -255,10 +249,7 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
     final orig = mainModel.settings;
     final edited = await showDialog<Settings>(
       context: context,
-      builder: (context) => ScopedModel<MainModel>(
-          model: mainModel,
-          child: Preferences(orig, masterEditor, viewEditor)
-      )
+      builder: (context) => mainModel.scoped(Preferences(orig, masterEditor, viewEditor))
     );
     if (edited != null) {
       ScopedModel.of<L10nModel>(context).setLocale(edited.localeCode);
@@ -272,13 +263,13 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
     final edited = await showDialog(context: context, builder: (context) => JSON(jsonS));
     if (edited != null) {
       await configFromJson(edited);
-      ScopedModel.of<MainModel>(context).reload();
+      MainModel.of(context).reload();
     }
   }
 
   List<Widget> _appBarActions(BuildContext context) {
     final w = <Widget>[];
-    final model = ScopedModel.of<MainModel>(context);
+    final model = MainModel.of(context);
 
     List<Alert> alerts = model.devState.alerts;
     if (alerts.isNotEmpty) {
