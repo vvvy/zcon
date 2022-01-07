@@ -199,12 +199,10 @@ Future<T> fetch<T>(String p, Settings settings) async {
   //TODO if content-type is json, parse it even if statusCode != 200
   if (response.statusCode == 200) {
     // If the call to the server was successful, parse the JSON
-    ///TODO switch to async await
-    return response.transform(utf8.decoder).join(" ").then((jsonS){
-      var zr = ZAResponse<T>.fromJson(json.decode(jsonS));
-      if (zr.code != 200) return Future<T>.error(AppError.zaAppError(zr.code, zr.message));
-      return Future<T>.value(zr.data);
-    });
+    final jsonO = await response.transform(utf8.decoder).transform(JsonDecoder()).first;
+    final zr = ZAResponse<T>.fromJson(jsonO);
+    if (zr.code != 200) return Future<T>.error(AppError.zaAppError(zr.code, zr.message));
+    return Future<T>.value(zr.data);
   } else {
     // If that call was not successful, throw an error.
     return Future<T>.error(AppError.zaHttpError(response.statusCode, response.reasonPhrase));

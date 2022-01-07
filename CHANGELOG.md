@@ -11,6 +11,9 @@
 * Add FCM support (compatible with ZWay)
 * Add Status to Drawer (?)
 
+## Version 1.0.5+60
+
+* Bugfix: JSON parsing errors for documents larger than 64KiB
  
 ## Version 1.0.4+5
 
