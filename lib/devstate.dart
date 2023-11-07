@@ -49,16 +49,16 @@ class AlertBuilder {
         _failedFilterId = failedFilterId,
         _temperatureFilterId = temperatureFilterId;
 
-  void processDevices(List<Device> devices) {
+  void processDevices(List<Device> devices, Settings settings) {
     int failedCount = 0;
     int batteryCount = 0;
     int temperatureCount = 0;
     for (Device device in devices) {
-      if (device.deviceType == "battery" && device.metrics.level < Constants.batteryAlertLevel)
+      if (device.deviceType == "battery" && device.metrics.level < settings.batteryAlertLevel)
         batteryCount += 1;
 
       if (device.deviceType == "sensorMultilevel" && device.probeType == "temperature") {
-        if (device.metrics.level < Constants.tempLoBound || device.metrics.level > Constants.tempHiBound)
+        if (device.metrics.level < settings.tempLoBound || device.metrics.level > settings.tempHiBound)
           temperatureCount += 1;
       }
 
@@ -175,7 +175,7 @@ class DevStateNonEmpty extends DevState {
       _isLoading = false;
       _errorCount = 0;
       _devices = _devices.merge(ds);
-      _alertBuilder.processDevices(_devices.devices);
+      _alertBuilder.processDevices(_devices.devices, _model.settings);
       _dlc.applyDevices(
           _devices.devices, _model.settings.visLevel, rebuildHint: _devices.structureChanged
       );
@@ -274,7 +274,7 @@ class DevStateEmpty extends DevState {
         print("Full update ok, n=${ds.devices.length}");
         _isLoading = false;
         error = null;
-        _alertBuilder.processDevices(ds.devices);
+        _alertBuilder.processDevices(ds.devices, settings);
         _model.submit(DevStateNonEmpty(this, devices: ds));
       } catch(err) {
         print("Full update failed, err=$err");

@@ -27,6 +27,8 @@ class L10ns {
     'visHidden': ['Hidden', 'Скрытые'],
     'visAll': ['All', 'Все'],
     'intGt5': ['Must be an int >= 5', 'Должно быть целым >= 5'],
+    'int0to100': ['Must be an integer between 0 and 100', 'Должно быть целым в диапазоне от 0 до 100'],
+    'double': ['Must be a double', 'Должно быть вещественным числом'],
     'inputRequired': ['Please enter value', 'Обязательное поле'],
     'jsonConfig': ['JSON config', 'Конфигурация (JSON)'],
     'invalidJson': ['Invalid JSON', 'Невалидный JSON'],
@@ -66,6 +68,10 @@ class L10ns {
     'url': ['URL', 'URL'],
     'userName': ['User name', 'Имя пользователя'],
     'password': ['Password', 'Пароль'],
+
+    'batteryAlertLevel': ['Low battery level, %', 'Низкий уровень батареи, %' ],
+    'tempLoBound': ['Low temperature, C/F', 'Низкая температура, C/F'],
+    'tempHiBound': ['High temperature, C/F', 'Высокая температура, C/F'],
   };
 
   static final Map<String, List<String Function(String)>> _localizedValuesFSS = {
@@ -177,6 +183,13 @@ class L10ns {
   String get stop => _localizedValues['stop'][_offset];
   String get startDown => _localizedValues['startDown'][_offset];
   String get decrease => _localizedValues['decrease'][_offset];
+
+  String get batteryAlertLevel => _localizedValues['batteryAlertLevel'][_offset];
+  String get tempLoBound => _localizedValues['tempLoBound'][_offset];
+  String get tempHiBound => _localizedValues['tempHiBound'][_offset];
+
+  String get int0to100 => _localizedValues['int0to100'][_offset];
+  String get double => _localizedValues['double'][_offset];
 
   //String get ZZZ => _localizedValues['ZZZ'][_offset];
   //String get ZZZ => _localizedValues['ZZZ'][_offset];

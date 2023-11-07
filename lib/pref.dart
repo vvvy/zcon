@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zcon/constants.dart';
 import 'package:zcon/devlist.dart';
 import 'package:zcon/i18n.dart';
 
@@ -13,7 +14,11 @@ const
   k_intervalUpdateS = 'intervalUpdateS',
   k_localeCode = 'localeCode',
   k_visLevel = 'visLevel',
-  k_config = 'config';
+  k_config = 'config',
+  k_batteryAlertLevel = 'batteryAlertLevel',
+  k_tempLoBound = 'tempLoBound',
+  k_tempHiBound = 'tempHiBound'
+;
 
 class ViewConfig {
   final List<String> views;
@@ -55,9 +60,7 @@ Future<void> configFromJson(String configJson) async {
   if (m.containsKey(k_config)) prefs.setStringList(k_config, <String>[for(var s in m[k_config]) s]);
 }
 
-const _intervalMainS = 60;
-const _intervalErrorRetryS = 60;
-const _intervalUpdateS = 5;
+
 
 class Settings {
   final String url;
@@ -72,15 +75,25 @@ class Settings {
   final int intervalUpdateS;
   /// Language setting
   final OverriddenLocaleCode localeCode;
-  /// Device visibility settting
+  /// Device visibility setting
   final VisLevel visLevel;
+  /// battery level alert threshold, in %%
+  final int batteryAlertLevel;
+  /// temperature normal range low bound (outside triggers alert)
+  final double tempLoBound;
+  /// temperature normal range high bound (outside triggers alert)
+  final double tempHiBound;
+
   Settings({
     this.url, this.username, this.password,
-    this.intervalMainS: _intervalMainS,
-    this.intervalErrorRetryS: _intervalErrorRetryS,
-    this.intervalUpdateS: _intervalUpdateS,
+    this.intervalMainS: Constants.defaultIntervalMainS,
+    this.intervalErrorRetryS: Constants.defaultIntervalErrorRetryS,
+    this.intervalUpdateS: Constants.defaultIntervalUpdateS,
     this.localeCode: OverriddenLocaleCode.None,
-    this.visLevel: VisLevel.All
+    this.visLevel: VisLevel.All,
+    this.batteryAlertLevel: Constants.defaultBatteryAlertLevel,
+    this.tempLoBound: Constants.defaultTempLoBound,
+    this.tempHiBound: Constants.defaultTempHiBound,
   });
 }
 
@@ -90,14 +103,17 @@ Future<Settings> readSettings() async {
       url: prefs.getString(k_url) ?? "",
       username: prefs.getString(k_username) ?? "",
       password: prefs.getString(k_password) ?? "",
-      intervalMainS: prefs.getInt(k_intervalMainS) ?? _intervalMainS,
-      intervalErrorRetryS: prefs.getInt(k_intervalErrorRetryS) ?? _intervalErrorRetryS,
-      intervalUpdateS: prefs.getInt(k_intervalUpdateS) ?? _intervalUpdateS,
+      intervalMainS: prefs.getInt(k_intervalMainS) ?? Constants.defaultIntervalMainS,
+      intervalErrorRetryS: prefs.getInt(k_intervalErrorRetryS) ?? Constants.defaultIntervalErrorRetryS,
+      intervalUpdateS: prefs.getInt(k_intervalUpdateS) ?? Constants.defaultIntervalUpdateS,
       localeCode: OverriddenLocaleCodeSerDe.de(prefs.getString(k_localeCode)) ?? OverriddenLocaleCode.None,
       visLevel: () {
         final l = prefs.getInt(k_visLevel) ?? 0;
         return VisLevel.values[(l >= 0 && l < VisLevel.values.length) ? l : 0];
-      }()
+      }(),
+      batteryAlertLevel: prefs.getInt(k_batteryAlertLevel) ?? Constants.defaultBatteryAlertLevel,
+      tempLoBound: prefs.getDouble(k_tempLoBound) ?? Constants.defaultTempLoBound,
+      tempHiBound: prefs.getDouble(k_tempHiBound) ?? Constants.defaultTempHiBound,
   );
 }
 
@@ -111,6 +127,9 @@ Future<void> writeSettings(Settings settings) async {
   await prefs.setInt(k_intervalUpdateS, settings.intervalUpdateS);
   await prefs.setString(k_localeCode, OverriddenLocaleCodeSerDe.ser(settings.localeCode));
   await prefs.setInt(k_visLevel, settings.visLevel.index);
+  await prefs.setInt(k_batteryAlertLevel, settings.batteryAlertLevel);
+  await prefs.setDouble(k_tempLoBound, settings.tempLoBound);
+  await prefs.setDouble(k_tempHiBound, settings.tempHiBound);
 }
 
 typedef Future<void> FVC(BuildContext context);
@@ -137,7 +156,10 @@ class PreferencesState extends State<Preferences> {
       cUsername = TextEditingController(),
       cPassword = TextEditingController(),
       cUrl = TextEditingController(),
-      cIntervalMainS = TextEditingController();
+      cIntervalMainS = TextEditingController(),
+      cBatteryAlertLevel = TextEditingController(),
+      cTempLoBound = TextEditingController(),
+      cTempHiBound = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
 
@@ -146,6 +168,9 @@ class PreferencesState extends State<Preferences> {
     cUsername.text = initSettings.username;
     cPassword.text = initSettings.password;
     cIntervalMainS.text = initSettings.intervalMainS.toString();
+    cBatteryAlertLevel.text = initSettings.batteryAlertLevel.toString();
+    cTempLoBound.text = initSettings.tempLoBound.toString();
+    cTempHiBound.text = initSettings.tempHiBound.toString();
     _localeCode = initSettings.localeCode;
     _visLevel = initSettings.visLevel;
   }
@@ -237,6 +262,49 @@ class PreferencesState extends State<Preferences> {
                       return null;
                     },
                   ),
+                  Divider(),
+                  Text(myLoc.alerts),
+                  Text(myLoc.batteryAlertLevel),
+                  TextFormField(
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    controller: cBatteryAlertLevel,
+                    validator: (value) {
+                      var iv = int.tryParse(value);
+                      var t = iv != null;
+                      t = t && iv >= 0;
+                      t = t && iv <= 100;
+                      if (!t) {
+                        return myLoc.int0to100;
+                      }
+                      return null;
+                    },
+                  ),
+                  Text(myLoc.tempLoBound),
+                  TextFormField(
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    controller: cTempLoBound,
+                    validator: (value) {
+                      var iv = double.tryParse(value);
+                      var t = iv != null;
+                      if (!t) {
+                        return myLoc.double;
+                      }
+                      return null;
+                    },
+                  ),
+                  Text(myLoc.tempHiBound),
+                  TextFormField(
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    controller: cTempHiBound,
+                    validator: (value) {
+                      var iv = double.tryParse(value);
+                      var t = iv != null;
+                      if (!t) {
+                        return myLoc.double;
+                      }
+                      return null;
+                    },
+                  ),
                   Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16.0),
                       child: Row(
@@ -251,19 +319,22 @@ class PreferencesState extends State<Preferences> {
                               onPressed: () {
                                 if (_formKey.currentState.validate()) {
                                   Navigator.pop(context, Settings(
-                                      url: cUrl.text,
-                                      username: cUsername.text,
-                                      password: cPassword.text,
-                                      intervalMainS: int.tryParse(cIntervalMainS.text) ?? _intervalMainS,
-                                      localeCode: _localeCode,
-                                      visLevel: _visLevel
+                                    url: cUrl.text,
+                                    username: cUsername.text,
+                                    password: cPassword.text,
+                                    intervalMainS: int.tryParse(cIntervalMainS.text) ?? Constants.defaultIntervalMainS,
+                                    localeCode: _localeCode,
+                                    visLevel: _visLevel,
+                                    batteryAlertLevel: int.tryParse(cBatteryAlertLevel.text) ?? Constants.defaultBatteryAlertLevel,
+                                    tempLoBound: double.tryParse(cTempLoBound.text) ?? Constants.defaultTempLoBound,
+                                    tempHiBound: double.tryParse(cTempHiBound.text) ?? Constants.defaultTempHiBound,
                                   ));
                                 }
                               },
                             ),
                           ]
                       )
-                  )
+                  ),
                 ]
               )
             ),
