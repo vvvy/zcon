@@ -11,7 +11,11 @@
 * Add FCM support (compatible with ZWay)
 * Add Status to Drawer (?)
 
-## Version 1.0.5+60
+## Version 1.0.6+8
+
+* Alarm and color indicator thresholds editable via Settings
+
+## Version 1.0.5+6
 
 * Bugfix: JSON parsing errors for documents larger than 64KiB
  

@@ -17,7 +17,10 @@ const
   k_config = 'config',
   k_batteryAlertLevel = 'batteryAlertLevel',
   k_tempLoBound = 'tempLoBound',
-  k_tempHiBound = 'tempHiBound'
+  k_tempHiBound = 'tempHiBound',
+  k_setPointBlueCircleThreshold = 'setPointBlueCircleThreshold',
+  k_batteryYellowCircleThreshold = 'batteryYellowCircleThreshold',
+  k_tempYellowCircleThreshold = 'tempYellowCircleThreshold'
 ;
 
 class ViewConfig {
@@ -83,6 +86,12 @@ class Settings {
   final double tempLoBound;
   /// temperature normal range high bound (outside triggers alert)
   final double tempHiBound;
+  /// Thermostat set point blue circle indication threshold
+  final double setPointBlueCircleThreshold;
+  /// Battery yellow circle indication threshold
+  final int batteryYellowCircleThreshold;
+  /// Temperature yellow circle indication threshold
+  final double tempYellowCircleThreshold;
 
   Settings({
     this.url, this.username, this.password,
@@ -94,6 +103,9 @@ class Settings {
     this.batteryAlertLevel: Constants.defaultBatteryAlertLevel,
     this.tempLoBound: Constants.defaultTempLoBound,
     this.tempHiBound: Constants.defaultTempHiBound,
+    this.setPointBlueCircleThreshold: Constants.defaultSetPointBlueCircleThreshold,
+    this.batteryYellowCircleThreshold: Constants.defaultBatteryYellowCircleThreshold,
+    this.tempYellowCircleThreshold: Constants.defaultTempYellowCircleThreshold,
   });
 }
 
@@ -114,6 +126,9 @@ Future<Settings> readSettings() async {
       batteryAlertLevel: prefs.getInt(k_batteryAlertLevel) ?? Constants.defaultBatteryAlertLevel,
       tempLoBound: prefs.getDouble(k_tempLoBound) ?? Constants.defaultTempLoBound,
       tempHiBound: prefs.getDouble(k_tempHiBound) ?? Constants.defaultTempHiBound,
+      setPointBlueCircleThreshold: prefs.getDouble(k_setPointBlueCircleThreshold) ?? Constants.defaultSetPointBlueCircleThreshold,
+      batteryYellowCircleThreshold: prefs.getInt(k_batteryYellowCircleThreshold) ?? Constants.defaultBatteryYellowCircleThreshold,
+      tempYellowCircleThreshold: prefs.getDouble(k_tempYellowCircleThreshold) ?? Constants.defaultTempYellowCircleThreshold,
   );
 }
 
@@ -130,6 +145,9 @@ Future<void> writeSettings(Settings settings) async {
   await prefs.setInt(k_batteryAlertLevel, settings.batteryAlertLevel);
   await prefs.setDouble(k_tempLoBound, settings.tempLoBound);
   await prefs.setDouble(k_tempHiBound, settings.tempHiBound);
+  await prefs.setDouble(k_setPointBlueCircleThreshold, settings.setPointBlueCircleThreshold);
+  await prefs.setInt(k_batteryYellowCircleThreshold, settings.batteryYellowCircleThreshold);
+  await prefs.setDouble(k_tempYellowCircleThreshold, settings.tempYellowCircleThreshold);
 }
 
 typedef Future<void> FVC(BuildContext context);
@@ -159,7 +177,11 @@ class PreferencesState extends State<Preferences> {
       cIntervalMainS = TextEditingController(),
       cBatteryAlertLevel = TextEditingController(),
       cTempLoBound = TextEditingController(),
-      cTempHiBound = TextEditingController();
+      cTempHiBound = TextEditingController(),
+      cSetPointBlueCircleThreshold = TextEditingController(),
+      cBatteryYellowCircleThreshold = TextEditingController(),
+      cTempYellowCircleThreshold = TextEditingController()
+  ;
 
   final _formKey = GlobalKey<FormState>();
 
@@ -171,6 +193,9 @@ class PreferencesState extends State<Preferences> {
     cBatteryAlertLevel.text = initSettings.batteryAlertLevel.toString();
     cTempLoBound.text = initSettings.tempLoBound.toString();
     cTempHiBound.text = initSettings.tempHiBound.toString();
+    cSetPointBlueCircleThreshold.text = initSettings.setPointBlueCircleThreshold.toString();
+    cBatteryYellowCircleThreshold.text = initSettings.batteryYellowCircleThreshold.toString();
+    cTempYellowCircleThreshold.text = initSettings.tempYellowCircleThreshold.toString();
     _localeCode = initSettings.localeCode;
     _visLevel = initSettings.visLevel;
   }
@@ -187,6 +212,24 @@ class PreferencesState extends State<Preferences> {
     final materialLoc = matLoc(context);
     final myLoc = L10ns.of(context);
     final vrGeneric = (String value) => value.isEmpty ? myLoc.inputRequired : null;
+    final vrDouble = (String value) {
+      var iv = double.tryParse(value);
+      var t = iv != null;
+      if (!t) {
+        return myLoc.double;
+      }
+      return null;
+    };
+    final vrPercent = (String value) {
+      var iv = int.tryParse(value);
+      var t = iv != null;
+      t = t && iv >= 0;
+      t = t && iv <= 100;
+      if (!t) {
+        return myLoc.int0to100;
+      }
+      return null;
+    };
 
     return Form(
         key: _formKey,
@@ -263,47 +306,43 @@ class PreferencesState extends State<Preferences> {
                     },
                   ),
                   Divider(),
-                  Text(myLoc.alerts),
+                  Text(myLoc.alerts, style: _boldFont),
                   Text(myLoc.batteryAlertLevel),
                   TextFormField(
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     controller: cBatteryAlertLevel,
-                    validator: (value) {
-                      var iv = int.tryParse(value);
-                      var t = iv != null;
-                      t = t && iv >= 0;
-                      t = t && iv <= 100;
-                      if (!t) {
-                        return myLoc.int0to100;
-                      }
-                      return null;
-                    },
+                    validator: vrPercent,
                   ),
                   Text(myLoc.tempLoBound),
                   TextFormField(
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     controller: cTempLoBound,
-                    validator: (value) {
-                      var iv = double.tryParse(value);
-                      var t = iv != null;
-                      if (!t) {
-                        return myLoc.double;
-                      }
-                      return null;
-                    },
+                    validator: vrDouble,
                   ),
                   Text(myLoc.tempHiBound),
                   TextFormField(
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     controller: cTempHiBound,
-                    validator: (value) {
-                      var iv = double.tryParse(value);
-                      var t = iv != null;
-                      if (!t) {
-                        return myLoc.double;
-                      }
-                      return null;
-                    },
+                    validator: vrDouble,
+                  ),
+                  Text(myLoc.visualThresholds, style: _boldFont),
+                  Text(myLoc.batteryYellowCircleThreshold),
+                  TextFormField(
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    controller: cBatteryYellowCircleThreshold,
+                    validator: vrPercent,
+                  ),
+                  Text(myLoc.setPointBlueCircleThreshold),
+                  TextFormField(
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    controller: cSetPointBlueCircleThreshold,
+                    validator: vrDouble,
+                  ),
+                  Text(myLoc.tempYellowCircleThreshold),
+                  TextFormField(
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    controller: cTempYellowCircleThreshold,
+                    validator: vrDouble,
                   ),
                   Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -328,6 +367,9 @@ class PreferencesState extends State<Preferences> {
                                     batteryAlertLevel: int.tryParse(cBatteryAlertLevel.text) ?? Constants.defaultBatteryAlertLevel,
                                     tempLoBound: double.tryParse(cTempLoBound.text) ?? Constants.defaultTempLoBound,
                                     tempHiBound: double.tryParse(cTempHiBound.text) ?? Constants.defaultTempHiBound,
+                                    setPointBlueCircleThreshold: double.tryParse(cSetPointBlueCircleThreshold.text) ?? Constants.defaultSetPointBlueCircleThreshold,
+                                    batteryYellowCircleThreshold: int.tryParse(cBatteryYellowCircleThreshold.text) ?? Constants.defaultBatteryYellowCircleThreshold,
+                                    tempYellowCircleThreshold: double.tryParse(cTempYellowCircleThreshold.text) ?? Constants.defaultTempYellowCircleThreshold,
                                   ));
                                 }
                               },

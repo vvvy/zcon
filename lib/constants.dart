@@ -13,6 +13,13 @@ class Constants {
   static const defaultTempLoBound = 5.0;
   static const defaultTempHiBound = 30.0;
 
+  /// Thermostat set point blue circle indication threshold
+  static const defaultSetPointBlueCircleThreshold = 18.0;
+  /// Battery yellow circle indication threshold
+  static const defaultBatteryYellowCircleThreshold = 40;
+  /// Temperature yellow circle indication threshold
+  static const defaultTempYellowCircleThreshold = 18.0;
+
   /// number of retries on http before giving up
   static const maxErrorRetries = 5;
 }

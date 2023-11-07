@@ -72,6 +72,11 @@ class L10ns {
     'batteryAlertLevel': ['Low battery level, %', 'Низкий уровень батареи, %' ],
     'tempLoBound': ['Low temperature, C/F', 'Низкая температура, C/F'],
     'tempHiBound': ['High temperature, C/F', 'Высокая температура, C/F'],
+
+    'visualThresholds': ['Color circle thresholds', 'Пороги цветовой окраски'],
+    'setPointBlueCircleThreshold': ['Set point: blue, C/F', 'Термостат: голубой, C/F'],
+    'batteryYellowCircleThreshold': ['Battery: yellow, %', 'Батарея: желтый, %'],
+    'tempYellowCircleThreshold': ['Temperature: yellow, C/F', 'Температура: желтый, C/F'],
   };
 
   static final Map<String, List<String Function(String)>> _localizedValuesFSS = {
@@ -191,6 +196,12 @@ class L10ns {
   String get int0to100 => _localizedValues['int0to100'][_offset];
   String get double => _localizedValues['double'][_offset];
 
+  String get visualThresholds => _localizedValues['visualThresholds'][_offset];
+  String get setPointBlueCircleThreshold => _localizedValues['setPointBlueCircleThreshold'][_offset];
+  String get tempYellowCircleThreshold => _localizedValues['tempYellowCircleThreshold'][_offset];
+  String get batteryYellowCircleThreshold => _localizedValues['batteryYellowCircleThreshold'][_offset];
+
+  //String get ZZZ => _localizedValues['ZZZ'][_offset];
   //String get ZZZ => _localizedValues['ZZZ'][_offset];
   //String get ZZZ => _localizedValues['ZZZ'][_offset];
 

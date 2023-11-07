@@ -12,6 +12,7 @@
 import 'package:flutter/material.dart';
 import 'package:zcon/pdu.dart';
 import 'package:zcon/custom_icons_icons.dart';
+import 'package:zcon/pref.dart';
 
 enum AColor { neutral, green, yellow, red }
 
@@ -45,11 +46,11 @@ AColor _fromValues(dynamic l, String v0, AColor c0, String v1, AColor c1) {
   else return AColor.neutral;
 }
 
-Widget _battery(dynamic level) {
+Widget _battery(Settings settings, dynamic level) {
   if (level is double || level is int) {
-    if (level < 25)
+    if (level < settings.batteryAlertLevel)
       return _colorAvatar(Icon(Icons.battery_alert), AColor.red);
-    else if (level < 50)
+    else if (level < settings.batteryYellowCircleThreshold)
       return _colorAvatar(Icon(Icons.battery_std), AColor.yellow);
     else
       return _colorAvatar(Icon(Icons.battery_std), AColor.green);
@@ -57,7 +58,7 @@ Widget _battery(dynamic level) {
   return _colorAvatar(Icon(Icons.battery_unknown), AColor.neutral);
 }
 
-Widget _windowBlind(dynamic level) {
+Widget _windowBlind(Settings settings, dynamic level) {
   //return _colorAvatar(Icon(CustomIcons.wb_unknown), AColor.red);
   if (!(level is double || level is int))
     return _colorAvatar(Icon(CustomIcons.wb_unknown), AColor.red);
@@ -79,9 +80,11 @@ Widget _windowBlind(dynamic level) {
 final _avatarMap = {
   "battery": _battery,
   "switchBinary":[Icon(Icons.lightbulb_outline)],
-  "thermostat/thermostat_set_point":[Text("T"), (l) => _fromRange(l, 18, 18, AColor.neutral, AColor.neutral, AColor.green)],
+  "thermostat/thermostat_set_point":[Text("T"), (Settings s, dynamic l) =>
+      _fromRange(l, s.setPointBlueCircleThreshold, s.setPointBlueCircleThreshold, AColor.neutral, AColor.neutral, AColor.green)],
 
-  "sensorMultilevel/temperature":[Text("t"), (l) => _fromRange(l, 5, 18, AColor.red, AColor.yellow, AColor.green)],
+  "sensorMultilevel/temperature":[Text("t"), (Settings s, dynamic l) =>
+      _fromRange(l, s.tempLoBound, s.tempYellowCircleThreshold, AColor.red, AColor.yellow, AColor.green)],
   "sensorMultilevel/meterElectric_ampere":[Text("A")],
   "sensorMultilevel/meterElectric_kilowatt_hour":[Text("kWh")],
   "sensorMultilevel/meterElectric_power_factor":[Text("P")],
@@ -93,7 +96,7 @@ final _avatarMap = {
   "toggleButton/notification_push":[Icon(Icons.notifications)],
   "toggleButton":[Icon(Icons.launch)],
 
-  "sensorBinary/flood":[Icon(Icons.invert_colors), (l) => _fromValues(l, "on", AColor.red, "off", AColor.green)],
+  "sensorBinary/flood":[Icon(Icons.invert_colors), (Settings s, dynamic l) => _fromValues(l, "on", AColor.red, "off", AColor.green)],
   "sensorBinary":[Icon(Icons.hdr_strong)],
 
   "sensorDiscrete":[Icon(Icons.menu)],
@@ -118,20 +121,20 @@ final _avatarMap = {
 
 
 
-Widget avatar(Device d) {
+Widget avatar(Device d, Settings settings) {
   var spec = _avatarMap[d.deviceType + "/" + d.probeType];
   if (spec == null) spec = _avatarMap[d.deviceType];
   if (spec == null) spec = _avatarMap["*"];
 
   if (spec is Function) {
-    return spec(d.metrics.level);
+    return spec(settings, d.metrics.level);
   } else if (spec is List) {
     AColor aColor;
     if (spec.length > 1) {
       if (spec[1] is AColor)
         aColor = spec[1];
       else if (spec[1] is Function)
-        aColor = spec[1](d.metrics.level);
+        aColor = spec[1](settings, d.metrics.level);
       else
         aColor = AColor.neutral;
     } else

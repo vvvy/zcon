@@ -179,7 +179,7 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
 
     return ListTile(
         title: Text(title, style: _biggerFont),
-        leading: avatar(d),
+        leading: avatar(d, mainModel.settings),
         subtitle: Text(_formatUpdateTime(d.updateTime, context), style: _smallerFont),
         onLongPress: () async { if(nv is NVUpdate) { notF(myLoc.updating(title)); nv.onUpdate(errorF); } },
         trailing: trailing
