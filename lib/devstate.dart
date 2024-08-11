@@ -23,7 +23,7 @@ class DevViewFull extends DevView {
 }
 
 class DevViewEmpty extends DevView {
-  final AppError error;
+  final AppError? error;
   final bool isLoading;
   DevViewEmpty(this.error, this.isLoading);
 }
@@ -43,7 +43,10 @@ class AlertBuilder {
   final int _failedFilterId;
   final int _batteryFilterId;
   final int _temperatureFilterId;
-  AlertBuilder({int failedFilterId, int batteryFilterId, int temperatureFilterId}):
+  AlertBuilder({
+    required int failedFilterId,
+    required int batteryFilterId,
+    required int temperatureFilterId}):
         _alerts = [],
         _batteryFilterId = batteryFilterId,
         _failedFilterId = failedFilterId,
@@ -54,16 +57,15 @@ class AlertBuilder {
     int batteryCount = 0;
     int temperatureCount = 0;
     for (Device device in devices) {
-      if (device.deviceType == "battery" && device.metrics.level < settings.batteryAlertLevel)
+      if (device.deviceType == "battery" && device.metrics!.level < settings.batteryAlertLevel)
         batteryCount += 1;
 
       if (device.deviceType == "sensorMultilevel" && device.probeType == "temperature") {
-        if (device.metrics.level < settings.tempLoBound || device.metrics.level > settings.tempHiBound)
+        if (device.metrics!.level! < settings.tempLoBound || device.metrics!.level! > settings.tempHiBound)
           temperatureCount += 1;
       }
 
-      if (device.metrics != null && device.metrics.isFailed != null && device.metrics.isFailed)
-        failedCount += 1;
+      if (device.metrics?.isFailed ?? false) failedCount += 1;
     }
     _alerts = [];
     if (temperatureCount > 0)
@@ -100,8 +102,8 @@ abstract class DevState {
   }
   bool get listsOnline => _dlc.isOnline;
   bool get isListEditable => _dlc.isListEditable;
-  Device getDeviceByLink(DeviceLink link);
-  List<ReorderListItem<String>> startEditList() => _dlc.startEditList();
+  Device? getDeviceByLink(DeviceLink link);
+  List<ReorderListItem<String>?>? startEditList() => _dlc.startEditList();
   void endEditList(List<ReorderListItem<String>> result) {
     _dlc.endEditList(result);
     _model.submit(ViewConfigUpdate(_dlc.makeConfig()));
@@ -123,9 +125,9 @@ abstract class DevState {
   void cleanup();
   DevState(this._model, this._isLoading, this._updateNeeded):
         _alertBuilder = AlertBuilder(
-            failedFilterId: DevListController.getViewId(View.Failed),
-            batteryFilterId: DevListController.getViewId(View.Battery),
-            temperatureFilterId: DevListController.getViewId(View.Temperature)
+            failedFilterId: DevListController.getViewId(AppView.Failed),
+            batteryFilterId: DevListController.getViewId(AppView.Battery),
+            temperatureFilterId: DevListController.getViewId(AppView.Temperature)
         ),
         _dlc = new DevListController();
 
@@ -138,17 +140,17 @@ abstract class DevState {
 }
 
 class DevStateNonEmpty extends DevState {
-  //Future<void> _devicesF;
-  Timer _devRefreshT;
+  Timer? _devRefreshT;
   Devices _devices;
   int _errorCount;
-  PopupF _popupF;
+  PopupF? _popupF;
 
-  DevStateNonEmpty(DevState origin, {Devices devices}):
+  DevStateNonEmpty(DevState origin, {required Devices devices}):
         _devices = devices,
+        _errorCount = 0,
         super.clone(origin)
   {
-    _dlc.applyDevices(devices.devices, _model.settings.visLevel, rebuildHint: true);
+    _dlc.applyDevices(devices.devices, _model.settings!.visLevel, rebuildHint: true);
     Future.microtask(() => _init());
   }
 
@@ -158,9 +160,9 @@ class DevStateNonEmpty extends DevState {
     return _dlc.isOnline ? DevViewFull(_dlc.list, _isLoading) : DevViewEmpty(null, _isLoading);
   }
 
-  void popup(PopupType type, [AppError error]) {
+  void popup(PopupType type, [AppError? error]) {
     print("Popup: $type $error");
-    if (_popupF != null) _popupF(type, error);
+    if (_popupF != null) _popupF!(type, error);
   }
 
   void _devUpdate() async {
@@ -170,14 +172,16 @@ class DevStateNonEmpty extends DevState {
     _model.submit(CommonModelEvents.UpdateUI);
 
     try {
-      final ds = await fetch<Devices>("?since=${_devices.updateTime}", _model.settings);
-      print("Incremental update ok, n=${ds.devices.length}");
+      final ds = await fetch<Devices>("?since=${_devices.updateTime}", _model.settings!);
+      print("Incremental update ok, n=${ds.devices!.length}");
       _isLoading = false;
       _errorCount = 0;
       _devices = _devices.merge(ds);
-      _alertBuilder.processDevices(_devices.devices, _model.settings);
+      _alertBuilder.processDevices(_devices.devices!, _model.settings!);
       _dlc.applyDevices(
-          _devices.devices, _model.settings.visLevel, rebuildHint: _devices.structureChanged
+          _devices.devices,
+          _model.settings!.visLevel,
+          rebuildHint: _devices.structureChanged ?? false
       );
       _model.submit(CommonModelEvents.UpdateUI);
       _setTimer();
@@ -197,7 +201,7 @@ class DevStateNonEmpty extends DevState {
 
   void _setTimer() async {
     if (_devRefreshT != null)
-      _devRefreshT.cancel();
+      _devRefreshT!.cancel();
     //Settings settings = await readSettings();
     final settings = _model.settings;
     if (settings == null) {
@@ -216,7 +220,7 @@ class DevStateNonEmpty extends DevState {
   }
 
   @override
-  Device getDeviceByLink(DeviceLink link) => link.getDevice(_devices.devices);
+  Device? getDeviceByLink(DeviceLink link) => link.getDevice(_devices.devices!);
 
   void _init() {
     _setTimer();
@@ -229,19 +233,17 @@ class DevStateNonEmpty extends DevState {
 
   @override
   void cleanup() {
-    if (_devRefreshT != null)
-      _devRefreshT.cancel();
+      _devRefreshT?.cancel();
   }
 }
 
 class DevStateEmpty extends DevState {
-  AppError error;
-  Future<void> devicesF;
+  AppError? error;
+  Future<void>? devicesF;
 
-  DevStateEmpty(DevState origin, {AppError error}):
-        error = error,
+  DevStateEmpty(DevState origin, {error}):
         super.clone(origin) {
-    _dlc.applyDevices(null, _model.settings.visLevel, rebuildHint: true);
+    _dlc.applyDevices(null, _model.settings!.visLevel, rebuildHint: true);
     initCond();
   }
 
@@ -251,15 +253,10 @@ class DevStateEmpty extends DevState {
     initCond();
   }
 
-  DevStateEmpty.init2(DevState origin):
-        error = null,
-        super.clone(origin) {
-    initCond();
-  }
-
   void initCond() {
+    print("initCond ${_model.settings} ${_model.viewConfig} e=${error}");
     if (_model.settings != null && _model.viewConfig != null && error == null)
-      Future.microtask(() => _init(_model.settings, _model.viewConfig));
+      Future.microtask(() => _init(_model.settings!, _model.viewConfig!));
   }
 
   void _init(Settings settings, ViewConfig viewConfig) async {
@@ -271,10 +268,10 @@ class DevStateEmpty extends DevState {
     devicesF = () async {
       try {
         final ds = await fetch<Devices>("", settings);
-        print("Full update ok, n=${ds.devices.length}");
+        print("Full update ok, n=${ds.devices!.length}");
         _isLoading = false;
         error = null;
-        _alertBuilder.processDevices(ds.devices, settings);
+        _alertBuilder.processDevices(ds.devices!, settings);
         _model.submit(DevStateNonEmpty(this, devices: ds));
       } catch(err) {
         print("Full update failed, err=$err");
@@ -289,7 +286,7 @@ class DevStateEmpty extends DevState {
   DevView getDeviceView(PopupF _popupF) => DevViewEmpty(error, _isLoading);
 
   @override
-  Device getDeviceByLink(DeviceLink link) => null;
+  Device? getDeviceByLink(DeviceLink link) => null;
 
   @override
   void tryUpdateNow() { }

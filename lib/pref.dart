@@ -24,7 +24,7 @@ const
 ;
 
 class ViewConfig {
-  final List<String> views;
+  final List<String>? views;
   ViewConfig(this.views);
 }
 
@@ -35,7 +35,7 @@ Future<ViewConfig> readViewConfig() async {
 
 Future<void> writeViewConfig(ViewConfig viewConfig) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  prefs.setStringList(k_config, viewConfig.views);
+  prefs.setStringList(k_config, viewConfig.views!);
 }
 
 /// Returns the app config as a json-serialized string.
@@ -94,22 +94,23 @@ class Settings {
   final double tempYellowCircleThreshold;
 
   Settings({
-    this.url, this.username, this.password,
-    this.intervalMainS: Constants.defaultIntervalMainS,
-    this.intervalErrorRetryS: Constants.defaultIntervalErrorRetryS,
-    this.intervalUpdateS: Constants.defaultIntervalUpdateS,
-    this.localeCode: OverriddenLocaleCode.None,
-    this.visLevel: VisLevel.All,
-    this.batteryAlertLevel: Constants.defaultBatteryAlertLevel,
-    this.tempLoBound: Constants.defaultTempLoBound,
-    this.tempHiBound: Constants.defaultTempHiBound,
-    this.setPointBlueCircleThreshold: Constants.defaultSetPointBlueCircleThreshold,
-    this.batteryYellowCircleThreshold: Constants.defaultBatteryYellowCircleThreshold,
-    this.tempYellowCircleThreshold: Constants.defaultTempYellowCircleThreshold,
+    required this.url, required this.username, required this.password,
+    this.intervalMainS = Constants.defaultIntervalMainS,
+    this.intervalErrorRetryS = Constants.defaultIntervalErrorRetryS,
+    this.intervalUpdateS = Constants.defaultIntervalUpdateS,
+    this.localeCode = OverriddenLocaleCode.None,
+    this.visLevel = VisLevel.All,
+    this.batteryAlertLevel = Constants.defaultBatteryAlertLevel,
+    this.tempLoBound = Constants.defaultTempLoBound,
+    this.tempHiBound = Constants.defaultTempHiBound,
+    this.setPointBlueCircleThreshold = Constants.defaultSetPointBlueCircleThreshold,
+    this.batteryYellowCircleThreshold = Constants.defaultBatteryYellowCircleThreshold,
+    this.tempYellowCircleThreshold = Constants.defaultTempYellowCircleThreshold,
   });
 }
 
 Future<Settings> readSettings() async {
+  print("readSettings");
   SharedPreferences prefs = await SharedPreferences.getInstance();
   return Settings(
       url: prefs.getString(k_url) ?? "",
@@ -118,7 +119,7 @@ Future<Settings> readSettings() async {
       intervalMainS: prefs.getInt(k_intervalMainS) ?? Constants.defaultIntervalMainS,
       intervalErrorRetryS: prefs.getInt(k_intervalErrorRetryS) ?? Constants.defaultIntervalErrorRetryS,
       intervalUpdateS: prefs.getInt(k_intervalUpdateS) ?? Constants.defaultIntervalUpdateS,
-      localeCode: OverriddenLocaleCodeSerDe.de(prefs.getString(k_localeCode)) ?? OverriddenLocaleCode.None,
+      localeCode: OverriddenLocaleCodeSerDe.de(prefs.getString(k_localeCode)),
       visLevel: () {
         final l = prefs.getInt(k_visLevel) ?? 0;
         return VisLevel.values[(l >= 0 && l < VisLevel.values.length) ? l : 0];
@@ -133,6 +134,7 @@ Future<Settings> readSettings() async {
 }
 
 Future<void> writeSettings(Settings settings) async {
+  print("writeSettings");
   SharedPreferences prefs = await SharedPreferences.getInstance();
   await prefs.setString(k_url, settings.url);
   await prefs.setString(k_username, settings.username);
@@ -154,7 +156,7 @@ typedef Future<void> FVC(BuildContext context);
 
 class Preferences extends StatefulWidget {
   final Settings _initSettings;
-  final FVC _masterEditor, _viewEditor;
+  final FVC? _masterEditor, _viewEditor;
 
   @override
   PreferencesState createState() {
@@ -166,7 +168,7 @@ class Preferences extends StatefulWidget {
 
 class PreferencesState extends State<Preferences> {
   final Settings initSettings;
-  final FVC _masterEditor, _viewEditor;
+  final FVC? _masterEditor, _viewEditor;
   OverriddenLocaleCode _localeCode;
   VisLevel _visLevel;
 
@@ -185,7 +187,10 @@ class PreferencesState extends State<Preferences> {
 
   final _formKey = GlobalKey<FormState>();
 
-  PreferencesState(this.initSettings, this._masterEditor, this._viewEditor) {
+  PreferencesState(this.initSettings, this._masterEditor, this._viewEditor) :
+        _localeCode = initSettings.localeCode,
+        _visLevel = initSettings.visLevel
+  {
     cUrl.text = initSettings.url;
     cUsername.text = initSettings.username;
     cPassword.text = initSettings.password;
@@ -196,8 +201,6 @@ class PreferencesState extends State<Preferences> {
     cSetPointBlueCircleThreshold.text = initSettings.setPointBlueCircleThreshold.toString();
     cBatteryYellowCircleThreshold.text = initSettings.batteryYellowCircleThreshold.toString();
     cTempYellowCircleThreshold.text = initSettings.tempYellowCircleThreshold.toString();
-    _localeCode = initSettings.localeCode;
-    _visLevel = initSettings.visLevel;
   }
 
   @override
@@ -211,8 +214,10 @@ class PreferencesState extends State<Preferences> {
   Widget build(BuildContext context) {
     final materialLoc = matLoc(context);
     final myLoc = L10ns.of(context);
-    final vrGeneric = (String value) => value.isEmpty ? myLoc.inputRequired : null;
-    final vrDouble = (String value) {
+    final vrGeneric = (String? value) =>
+      (value != null && value.isEmpty) ? myLoc.inputRequired : null;
+    final vrDouble = (String? value) {
+      if (value == null) return null;
       var iv = double.tryParse(value);
       var t = iv != null;
       if (!t) {
@@ -220,7 +225,8 @@ class PreferencesState extends State<Preferences> {
       }
       return null;
     };
-    final vrPercent = (String value) {
+    final vrPercent = (String? value) {
+      if (value == null) return null;
       var iv = int.tryParse(value);
       var t = iv != null;
       t = t && iv >= 0;
@@ -266,7 +272,7 @@ class PreferencesState extends State<Preferences> {
                     DropdownMenuItem<OverriddenLocaleCode>(value: OverriddenLocaleCode.RU, child: Text(myLoc.russian)),
                   ],
                       value: _localeCode,
-                      onChanged: (value) => setState(() { _localeCode = value; })
+                      onChanged: (value) => setState(() { if (value != null) _localeCode = value as OverriddenLocaleCode; })
                   ),
                   if (_masterEditor != null || _viewEditor != null) ...(
                       <Widget>[
@@ -274,9 +280,9 @@ class PreferencesState extends State<Preferences> {
                         Text(myLoc.viewSettings, style: _boldFont),
                         Column(children: <Widget>[
                           if (_masterEditor != null)
-                            RaisedButton(child: Text(myLoc.editViewList), onPressed: () => _masterEditor(context)),
+                            ElevatedButton(child: Text(myLoc.editViewList), onPressed: () => _masterEditor(context)),
                           if(_viewEditor != null)
-                            RaisedButton(child: Text(myLoc.editCurrentView), onPressed: () => _viewEditor(context))
+                            ElevatedButton(child: Text(myLoc.editCurrentView), onPressed: () => _viewEditor(context))
                         ])
                       ]
                   ),
@@ -289,13 +295,14 @@ class PreferencesState extends State<Preferences> {
                     DropdownMenuItem<VisLevel>(value: VisLevel.All, child: Text(myLoc.visAll)),
                   ],
                       value:  _visLevel,
-                      onChanged: (value) => setState(() { _visLevel = value; })
+                      onChanged: (value) => { if (value != null) setState(() { _visLevel = value as VisLevel; }) }
                   ),
                   Text(myLoc.updateIntervalSeconds),
                   TextFormField(
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     controller: cIntervalMainS,
                     validator: (value) {
+                      if (value == null) return null;
                       var iv = int.tryParse(value);
                       var t = iv != null;
                       t = t && iv >= 5;
@@ -349,14 +356,14 @@ class PreferencesState extends State<Preferences> {
                       child: Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            FlatButton(
+                            TextButton(
                               child: Text(materialLoc.cancelButtonLabel),
                               onPressed: () => Navigator.pop(context, null),
                             ),
-                            FlatButton(
+                            TextButton(
                               child: Text(materialLoc.okButtonLabel),
                               onPressed: () {
-                                if (_formKey.currentState.validate()) {
+                                if (_formKey.currentState!.validate()) {
                                   Navigator.pop(context, Settings(
                                     url: cUrl.text,
                                     username: cUsername.text,
@@ -420,22 +427,25 @@ class JSONState extends State<JSON> {
                 maxLines: 6,
                 autocorrect: false,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
-                validator: (value) { try { jsonDecode(value); return null; } catch(_) { return myLoc.invalidJson; } },
+                validator: (value) {
+                  if (value == null) { return null; }
+                  try { jsonDecode(value); return null; }
+                  catch(_) { return myLoc.invalidJson; } },
               ),
               Padding(
               padding: const EdgeInsets.symmetric(vertical: 16.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    FlatButton(
+                    TextButton(
                       child: Text(materialLoc.okButtonLabel),
                       onPressed: () {
-                        if (_formKey.currentState.validate()) {
+                        if (_formKey.currentState!.validate()) {
                           Navigator.pop(context, cJSON.text);
                         }
                       }
                     ),
-                    FlatButton(
+                    TextButton(
                       child: Text(materialLoc.cancelButtonLabel),
                       onPressed: () {
                         Navigator.pop(context, null);

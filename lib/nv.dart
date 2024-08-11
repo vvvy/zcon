@@ -27,7 +27,7 @@ class NVSwitch extends NVUpdate {
   }
   NVSwitch(NVController nvc, String devId, String value): value = (value == "on"), super(nvc, devId);
   static NV fromDev(NVController nvc, Device d, L10ns _l10ns) =>
-      NVSwitch(nvc, d.id, d.metrics.level.toString());
+      NVSwitch(nvc, d.id!, (d.metrics?.level).toString());
 }
 
 class NVPushButton extends NV {
@@ -35,11 +35,11 @@ class NVPushButton extends NV {
     _nvc.exec(_devId, "command", "on", errorF);
   }
   NVPushButton(NVController nvc, String devId): super(nvc, devId);
-  static NV fromDev(NVController nvc, Device d, L10ns _l10ns) => NVPushButton(nvc, d.id);
+  static NV fromDev(NVController nvc, Device d, L10ns _l10ns) => NVPushButton(nvc, d.id!);
 }
 
 class NVThermostatSetPoint extends NV {
-  final double value;
+  final double? value;
   final String title;
   void onSet(double newV, ErrorF errorF) {
     _nvc.exec(_devId, "command", "exact?level=$newV", errorF);
@@ -47,14 +47,14 @@ class NVThermostatSetPoint extends NV {
   NVThermostatSetPoint(NVController nvc, String devId, this.title, this.value): super(nvc, devId);
   static NV fromDev(NVController nvc, Device d, L10ns _l10ns) =>
       NVThermostatSetPoint(nvc,
-        d.id,
-        d.metrics.level.toString() + nvl(d.metrics.scaleTitle, ""),
-        asDouble(d.metrics.level)
+        d.id!,
+        (d.metrics?.level).toString() + nvl(d.metrics?.scaleTitle, ""),
+        asDouble(d.metrics?.level)
       );
 }
 
 class NVSwitchMultilevel extends NVUpdate {
-  final int value;
+  final int? value;
   final String title;
   void onSetLevel(int newV, ErrorF errorF) =>
       _nvc.exec(_devId, "command", "exact?level=${_nv(newV)}", errorF);
@@ -65,22 +65,23 @@ class NVSwitchMultilevel extends NVUpdate {
   void onIncrease(ErrorF errorF) => _nvc.exec(_devId, "command", "increase", errorF);
   void onDecrease(ErrorF errorF) => _nvc.exec(_devId, "command", "decrease", errorF);
 
-  static int _nv(int v) {
+  static int? _nv(int? v) {
+    if (v == null) return v;
     if (v > 99) v = 99;
     if (v < 0) v = 0;
     return v;
   }
 
   //TODO localize
-  static String nvText(int v, L10ns l10ns) {
+  static String nvText(int? v, L10ns l10ns) {
     return { 0: l10ns.closed, 99: l10ns.open }[v] ?? (v.toString() + "%");
   }
 
   NVSwitchMultilevel(NVController nvc, String devId, this.title, this.value): super(nvc, devId);
 
   static NV fromDev(NVController nvc, Device d, L10ns l10ns) {
-   int v = _nv(asInt(d.metrics.level));
-   return NVSwitchMultilevel(nvc, d.id, nvText(v, l10ns), v);
+   int? v = _nv(asInt(d.metrics?.level));
+   return NVSwitchMultilevel(nvc, d.id!, nvText(v, l10ns), v);
   }
 }
 
@@ -88,10 +89,10 @@ class NVShow extends NVUpdate {
   final String value;
   NVShow(NVController nvc, String devId, String value): value = value, super(nvc, devId);
   static NV fromDev(NVController nvc, Device d, L10ns _l10ns) =>
-      NVShow(nvc, d.id, d.metrics.level.toString() + nvl(d.metrics.scaleTitle, ""));
+      NVShow(nvc, d.id!, (d.metrics?.level).toString() + nvl(d.metrics?.scaleTitle, ""));
 }
 
-double asDouble(dynamic v) {
+double? asDouble(dynamic v) {
   if (v is double)
     return v;
   else if (v is int)
@@ -102,7 +103,7 @@ double asDouble(dynamic v) {
     return null;
 }
 
-int asInt(dynamic v) {
+int? asInt(dynamic v) {
   if (v is int)
     return v;
   else if (v is double)
@@ -128,15 +129,15 @@ class NVController {
   final MainModel model;
 
   NV getNV(Device d, L10ns l10ns) {
-    NVGen f = nvForType[d.deviceType];
-    if (f == null) f = nvForType["*"];
+    NVGen? f = nvForType[d.deviceType];
+    if (f == null) f = nvForType["*"]!;
     return f(this, d, l10ns);
   }
 
   void exec(String c0, String c1, String c2, ErrorF errorF) async {
     print("Exec: '$c0/$c1/$c2'");
     try {
-      final _ = await fetch<Null>("$c0/$c1/$c2", model.settings);
+      final _ = await fetch<Null>("$c0/$c1/$c2", model.settings!);
       print("Exec ok");
       model.submit(CommonModelEvents.RemoteReloadRequest);
     } catch (err) { errorF(AppError.convert(err)); }

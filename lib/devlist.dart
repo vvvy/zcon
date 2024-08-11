@@ -57,13 +57,13 @@ abstract class DevListType {
 
 class DevListTypeIdentity extends DevListType {
   @override
-  DevList getList(List<Device> devices, {bool rebuildHint}) { return DevListIdentity(devices); }
+  DevList getList(List<Device> devices, {bool rebuildHint = false}) { return DevListIdentity(devices); }
 }
 
 typedef bool DevF(Device d);
 typedef int DevS(Device d1, Device d2);
 
-List<int> buildIndex(List<Device> devices, DevF f, DevS s) {
+List<int> buildIndex(List<Device> devices, DevF f, DevS? s) {
   var pos = <int>[];
   for (int i = 0; i < devices.length; i++)
     if (f(devices[i]))
@@ -75,16 +75,16 @@ List<int> buildIndex(List<Device> devices, DevF f, DevS s) {
 
 class DevListTypeIndex extends DevListType {
   final DevF _f;
-  final DevS _s;
-  List<int> _pos;
+  final DevS? _s;
+  List<int>? _pos;
   @override
-  DevList getList(List<Device> devices, {bool rebuildHint}) {
+  DevList getList(List<Device> devices, {bool rebuildHint = false}) {
     if (rebuildHint || _pos == null)
       _pos = buildIndex(devices, _f, _s);
-    return DevListIndex(devices, _pos);
+    return DevListIndex(devices, _pos!);
   }
 
-  DevListTypeIndex({DevF f, DevS s}):
+  DevListTypeIndex({required DevF f, DevS? s}):
         _f = f,
         _s = s;
 }
@@ -96,21 +96,25 @@ Iterable<MapEntry<T, int>> zipWithIndex<T>(Iterable<T> l) {
 
 Iterable<MapEntry<T, U>> zip<T, U>(Iterable<T> t, Iterable<U> u) {
   var ui = u.iterator;
-  return t.map((tv) => ui.moveNext() ? MapEntry(tv, ui.current) : null).takeWhile((i) => i != null);
+  return t
+      .map((tv) => ui.moveNext() ? MapEntry(tv, ui.current) : null)
+      .takeWhile((i) => i != null)
+      .map((i) => i!);
 }
 
 class DevListTypeIdList extends DevListType {
   List<String> _ids;
-  List<int> _pos;
+  List<int>? _pos;
 
+  DevListTypeIdList() : _ids = List.empty();
   @override
-  DevList getList(List<Device> devices, {bool rebuildHint}) {
+  DevList getList(List<Device> devices, {bool rebuildHint = false}) {
     if (rebuildHint || _pos == null) {
       var m = Map.fromEntries(zipWithIndex(devices).map((me) => MapEntry(me.key.id, me.value)));
       _ids.removeWhere((id) => !m.containsKey(id));
-      _pos = _ids.map((id) => m[id]).toList();
+      _pos = _ids.map((id) => m[id]!).toList();
     }
-    return  DevListIndex(devices, _pos);
+    return DevListIndex(devices, _pos!);
   }
 
   void setIds(List<String> ids) { _pos = null; _ids = ids; }
@@ -133,13 +137,13 @@ class IdName<Id> {
 }
 
 class ReorderListItem<Id> {
-  final IdName<Id> i;
-  final bool isSeparator;
+  final IdName<Id>? i;
 
-  ReorderListItem(Id id, String name) : i = IdName(id, name), isSeparator = false;
-  ReorderListItem.sep(): i = null, isSeparator = true;
+  ReorderListItem(Id id, String name) : i = IdName(id, name);
+  ReorderListItem.sep(): i = null;
   @override
-  String toString() => isSeparator ? "---------" : "${i.name}@${i.id}";
+  String toString() => i == null ? "---------" : "${i!.name}@${i!.id}";
+  bool get isSeparator => i == null;
 }
 
 /// Interface class for Device List Controller
@@ -165,7 +169,7 @@ abstract class AbstractDevListController {
   /// gets current device list -- this is to display in the main list view
   DevList get list;
   /// starts edit customN device list
-  List<ReorderListItem<String>> startEditList();
+  List<ReorderListItem<String>?>? startEditList();
   /// ends editing customN device list, previously started by startEditList
   void endEditList(List<ReorderListItem<String>> result);
   //int getTypeId(String t);
@@ -182,7 +186,7 @@ enum _S {
   err
 }
 
-enum View {
+enum AppView {
   All,
   Temperature,
   Thermostats,
@@ -198,41 +202,42 @@ enum View {
   Custom5
 }
 
-typedef String ViewNameTranslator(View view);
+typedef String ViewNameTranslator(AppView view);
 
 class DevListController extends AbstractDevListController {
-  static final Map<View, DevListType> _typeMap = {
-    View.All: DevListTypeIdentity(),
-    View.Temperature: DevListTypeIndex(f: deviceAndProbeTypeFilter("sensorMultilevel", "temperature")),
-    View.Thermostats: DevListTypeIndex(f: deviceTypeFilter("thermostat")),
-    View.Scene: DevListTypeIndex(f: deviceTypeFilter("toggleButton")),
-    View.Switches: DevListTypeIndex(f: deviceTypeFilter("switchBinary")),
-    View.Blinds: DevListTypeIndex(f: deviceAndProbeTypeFilter("switchMultilevel", "motor")),
-    View.Battery: DevListTypeIndex(f: deviceTypeFilter("battery")),
-    View.Failed: DevListTypeIndex(f: (d) => d.metrics.isFailed == true),
-    View.Custom1: DevListTypeIdList(),
-    View.Custom2: DevListTypeIdList(),
-    View.Custom3: DevListTypeIdList(),
-    View.Custom4: DevListTypeIdList(),
-    View.Custom5: DevListTypeIdList(),
+  static final Map<AppView, DevListType> _typeMap = {
+    AppView.All: DevListTypeIdentity(),
+    AppView.Temperature: DevListTypeIndex(f: deviceAndProbeTypeFilter("sensorMultilevel", "temperature")),
+    AppView.Thermostats: DevListTypeIndex(f: deviceTypeFilter("thermostat")),
+    AppView.Scene: DevListTypeIndex(f: deviceTypeFilter("toggleButton")),
+    AppView.Switches: DevListTypeIndex(f: deviceTypeFilter("switchBinary")),
+    AppView.Blinds: DevListTypeIndex(f: deviceAndProbeTypeFilter("switchMultilevel", "motor")),
+    AppView.Battery: DevListTypeIndex(f: deviceTypeFilter("battery")),
+    AppView.Failed: DevListTypeIndex(f: (d) => d.metrics?.isFailed == true),
+    AppView.Custom1: DevListTypeIdList(),
+    AppView.Custom2: DevListTypeIdList(),
+    AppView.Custom3: DevListTypeIdList(),
+    AppView.Custom4: DevListTypeIdList(),
+    AppView.Custom5: DevListTypeIdList(),
   };
 
-  static final List<View> _typeIds = _typeMap.keys.toList(growable: false);
+  static final List<AppView> _typeIds = _typeMap.keys.toList(growable: false);
   static final List<DevListType> _types = _typeMap.values.toList(growable: false);
 
   List<int> _generations;
   int _generation;
-  List<int> _master;
+  List<int>? _master;
   int _current;
 
-  List<Device> _devices;
+  List<Device>? _devices;
 
-  DevListController() {
-    _generations = Iterable.generate(_types.length, (_) => 0).toList(growable: false);
-    _generation = 0;
-  }
+  DevListController() :
+    _generations = Iterable.generate(_types.length, (_) => 0).toList(growable: false),
+    _generation = 0,
+    _current = 0
+  ;
 
-  static int getViewId(View v) => DevListController._typeIds.indexOf(v);
+  static int getViewId(AppView v) => DevListController._typeIds.indexOf(v);
 
   @override
   bool get isOnline => _master != null && _devices != null;
@@ -245,7 +250,8 @@ class DevListController extends AbstractDevListController {
 
   @override
   set current(int current) {
-    if (_master.indexOf(current) < 0)
+    if (_master == null) return;
+    if (_master!.indexOf(current) < 0)
       print("setPos: Error: invalid current=$current on master=$_master");
     else
       _current = current;
@@ -253,12 +259,12 @@ class DevListController extends AbstractDevListController {
 
   @override
   List<IdName<int>> getMaster(ViewNameTranslator vnt) =>
-      _master.map((i) => IdName(i, vnt(_typeIds[i]))).toList();
+      _master!.map((i) => IdName(i, vnt(_typeIds[i]))).toList();
 
   @override
   List<ReorderListItem<int>> startEditMaster(ViewNameTranslator vnt) {
-    final masterComplement = Iterable.generate(_typeIds.length).toSet().difference(_master.toSet());
-    final l = _master.map((i) => ReorderListItem<int>(i, vnt(_typeIds[i]))).toList();
+    final masterComplement = Iterable.generate(_typeIds.length).toSet().difference(_master!.toSet());
+    final l = _master!.map((i) => ReorderListItem<int>(i, vnt(_typeIds[i]))).toList();
     final m = masterComplement.map((i) => ReorderListItem<int>(i, vnt(_typeIds[i]))).toList();
     return l + [ReorderListItem.sep()] + m;
   }
@@ -274,24 +280,24 @@ class DevListController extends AbstractDevListController {
   void endEditMaster(List<ReorderListItem<int>> result) {
     int sep = result.indexWhere((i) => i.isSeparator);
     if (sep >= 0) result = result.take(sep).toList();
-    final rv = result.map((rli) => rli.i.id).toList();
+    final rv = result.map((rli) => rli.i!.id).toList();
     if (_masterValid(rv)) {
       _master = rv;
-      if (_master.indexOf(_current) < 0) {
-        _current = _master[0];
+      if (_master!.indexOf(_current) < 0) {
+        _current = _master![0];
       }
     } else
       print("Error: endEditMaster: invalid input: $result");
   }
 
   @override
-  void applyDevices(List<Device> dev, VisLevel visLevel, {bool rebuildHint}) {
+  void applyDevices(List<Device>? dev, VisLevel visLevel, {bool rebuildHint = false}) {
     if (dev == null || visLevel == VisLevel.All)
       _devices = dev;
     else if (visLevel == VisLevel.Invisible)
-      _devices = dev.where((d) => !d.permanentlyHidden).toList();
+      _devices = dev.where((d) => !(d.permanentlyHidden ?? false)).toList();
     else
-      _devices = dev.where((d) => (!d.permanentlyHidden && d.visibility)).toList();
+      _devices = dev.where((d) => (!(d.permanentlyHidden ?? false) && (d.visibility ?? false))).toList();
     if (rebuildHint) _generation++;
   }
 
@@ -302,11 +308,11 @@ class DevListController extends AbstractDevListController {
       _generations[_current] = _generation;
       rebuildHint = true;
     }
-    return _types[_current].getList(_devices, rebuildHint: rebuildHint);
+    return _types[_current].getList(_devices!, rebuildHint: rebuildHint);
   }
 
   @override
-  void applyConfig(int current, List<int> master, List<int> configPos, List<List<String>> config) {
+  void applyConfig(int current, List<int>? master, List<int>? configPos, List<List<String>>? config) {
     var t = true;
     t = t && master != null;
     t = t && _masterValid(master);
@@ -339,13 +345,13 @@ class DevListController extends AbstractDevListController {
   }
 
   @override
-  List<ReorderListItem<String>> startEditList() {
+  List<ReorderListItem<String>?>? startEditList() {
     final t = _types[_current];
     if (t is DevListTypeIdList) {
       final ids = t.getIds();
 
-      final names = Map.fromEntries(_devices.map((dev) => MapEntry(dev.id, dev.metrics.title ?? dev.id)));
-      final l0 = ids.map((id) => names.containsKey(id) ? ReorderListItem(id, names.remove(id)) : null).toList();
+      final names = Map.fromEntries(_devices!.map((dev) => MapEntry(dev.id!, dev.metrics?.title ?? dev.id!)));
+      final l0 = ids.map((id) => names.containsKey(id) ? ReorderListItem(id, names.remove(id)!) : null).toList();
       final l1 = names.entries.map((me) => ReorderListItem(me.key, me.value)).toList();
       return l0 + [ReorderListItem.sep()] + l1;
     }
@@ -359,7 +365,7 @@ class DevListController extends AbstractDevListController {
     if (t is DevListTypeIdList) {
       int sep = result.indexWhere((i) => i.isSeparator);
       if (sep >= 0) result = result.take(sep).toList();
-      final rv = result.map((rli) => rli.i.id).toList();
+      final rv = result.map((rli) => rli.i!.id).toList();
       print("Set ids $rv");
       t.setIds(rv);
     }
@@ -369,8 +375,8 @@ class DevListController extends AbstractDevListController {
     var l = <String>[];
     l.add("16");
     l.add(_current.toString());
-    l.add(_master.length.toString());
-    l.addAll(_master.map((w) => w.toString()));
+    l.add(_master!.length.toString());
+    l.addAll(_master!.map((w) => w.toString()));
     for (final mi in zipWithIndex(_types)) {
       final t = mi.key;
       if (t is DevListTypeIdList) {
@@ -386,11 +392,11 @@ class DevListController extends AbstractDevListController {
 
   void parseConfig(ViewConfig viewConfig) {
     int pos = -1;
-    List<int> master;
-    List<int> configPos;
-    List<List<String>> config;
-    int cnt;
-    int ival;
+    List<int>? master;
+    List<int>? configPos;
+    List<List<String>>? config;
+    int cnt = -1;
+    int ival = -1;
 
     final configRaw = viewConfig.views;
 
@@ -411,20 +417,20 @@ class DevListController extends AbstractDevListController {
             master = <int>[];
             return cnt > 0 ? _S.mItem : _S.err;
           case _S.mItem:
-              master.add(ival);
+              master!.add(ival);
               cnt--;
               return cnt > 0 ? _S.mItem : _S.cfgP;
           case _S.cfgP:
             if (configPos == null) configPos = <int>[];
-            configPos.add(ival);
+            configPos!.add(ival);
             return _S.cfgLen;
           case _S.cfgLen:
             if (config == null) config = <List<String>>[];
             cnt = ival;
-            config.add(<String>[]);
+            config!.add(<String>[]);
             return cnt > 0 ? _S.cfgItem : _S.cfgP;
           case _S.cfgItem:
-            config.last.add(v);
+            config!.last.add(v);
             cnt--;
             return cnt > 0 ? _S.cfgItem : _S.cfgP;
           default:

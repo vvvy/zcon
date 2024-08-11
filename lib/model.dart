@@ -29,30 +29,30 @@ class L10nModel extends Model {
 }
 
 class MainModel extends Model {
-  DevState devState;
-  NVController nvc;
-  Settings _settings;
-  ViewConfig _viewConfig;
+  DevState? devState;
+  NVController? nvc;
+  Settings? _settings;
+  ViewConfig? _viewConfig;
 
   MainModel() {
-    this.nvc = NVController(this);
+    nvc = NVController(this);
   }
 
-  static MainModel of(BuildContext context, {rebuildOnChange: false}) =>
+  static MainModel of(BuildContext context, {rebuildOnChange = false}) =>
       ScopedModel.of<MainModel>(context, rebuildOnChange: rebuildOnChange);
 
   Widget scoped(Widget child) => ScopedModel<MainModel>(model: this, child: child);
 
-  Settings get settings => _settings;
-  ViewConfig get viewConfig => _viewConfig;
+  Settings? get settings => _settings;
+  ViewConfig? get viewConfig => _viewConfig;
 
-  NV getNVbyLink(DeviceLink link, L10ns l10ns) {
-    final device = devState.getDeviceByLink(link);
-    return (device != null) ? nvc.getNV(device, l10ns) : null;
+  NV? getNVbyLink(DeviceLink link, L10ns l10ns) {
+    final device = devState!.getDeviceByLink(link);
+    return (device != null) ? nvc!.getNV(device, l10ns) : null;
   }
 
   void setDevState(DevState newDevState) {
-    if (devState != newDevState && devState != null) devState.cleanup();
+    if (devState != newDevState && devState != null) devState!.cleanup();
     devState = newDevState;
     notifyListeners();
   }
@@ -66,7 +66,7 @@ class MainModel extends Model {
     Future.microtask(() async {
       _settings = await readSettings();
       _viewConfig = await readViewConfig();
-      l10nModel.setLocale(_settings.localeCode);
+      l10nModel.setLocale(_settings!.localeCode);
       reload();
     });
   }
@@ -74,11 +74,11 @@ class MainModel extends Model {
   void submit(dynamic event) {
     print("submit $event");
     if (event == CommonModelEvents.AppPaused) {
-      setDevState(DevStateEmpty(devState, error: AppError.appPaused()));
+      setDevState(DevStateEmpty(devState!, error: AppError.appPaused()));
     } else if (event == CommonModelEvents.AppResumed) {
       setDevState(DevStateEmpty.init(this));
     } else if (event == CommonModelEvents.RemoteReloadRequest) {
-      if (devState != null) devState.flagNeedsUpdate();
+      if (devState != null) devState!.flagNeedsUpdate();
     } else if (event == CommonModelEvents.UpdateUI) {
       notifyListeners();
     } else if (event == CommonModelEvents.Reload) {
@@ -97,5 +97,4 @@ class MainModel extends Model {
       print("WARNING: Unhandled event: $event");
     }
   }
-
 }

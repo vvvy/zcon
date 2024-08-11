@@ -121,20 +121,22 @@ final _avatarMap = {
 
 
 
-Widget avatar(Device d, Settings settings) {
-  var spec = _avatarMap[d.deviceType + "/" + d.probeType];
-  if (spec == null) spec = _avatarMap[d.deviceType];
+Widget avatar(Device d, Settings? settings) {
+  final deviceType = d.deviceType ?? "?";
+  final probeType = d.probeType ?? "?";
+  var spec = _avatarMap[deviceType + "/" + probeType];
+  if (spec == null) spec = _avatarMap[deviceType];
   if (spec == null) spec = _avatarMap["*"];
 
   if (spec is Function) {
-    return spec(settings, d.metrics.level);
+    return spec(settings, d.metrics?.level);
   } else if (spec is List) {
     AColor aColor;
     if (spec.length > 1) {
       if (spec[1] is AColor)
         aColor = spec[1];
       else if (spec[1] is Function)
-        aColor = spec[1](settings, d.metrics.level);
+        aColor = spec[1](settings, d.metrics?.level);
       else
         aColor = AColor.neutral;
     } else

@@ -6,7 +6,7 @@ import 'package:zcon/pref.dart';
 
 class Metrics {
 // "scaleTitle":"°C",
-  final String scaleTitle;
+  final String? scaleTitle;
 // "level":23,
   final dynamic level;
 // "min":5,
@@ -14,11 +14,11 @@ class Metrics {
 // "max":40,
   final dynamic max;
 // "icon":"thermostat",
-  final String icon;
+  final String? icon;
 // "title":"TS F2",
-  final String title;
+  final String? title;
 // "isFailed":false
-  final bool isFailed;
+  final bool? isFailed;
 
   Metrics({this.scaleTitle, this.level, this.min, this.max, this.icon, this.title, this.isFailed});
 
@@ -44,35 +44,35 @@ class Metrics {
 
 class Device {
 // "creationTime":1452191339,
-  final int creationTime;
+  final int? creationTime;
 // "creatorId":1,
-  final int creatorId;
+  final int? creatorId;
 // "customIcons":{},
-  final Map<String, String> customIcons;
+  final Map<String, String>? customIcons;
 // "deviceType":"thermostat",
-  final String deviceType;
+  final String? deviceType;
 // "h":-647335312,
-  final int h;
+  final int? h;
 // "hasHistory":false,
-  final bool hasHistory;
+  final bool? hasHistory;
 // "id":"ZWayVDev_zway_11-0-67-1",
-  final String id;
+  final String? id;
 // "location":2,
-  final int location;
+  final int? location;
 // "metrics":{"scaleTitle":"°C","level":23,"min":5,"max":40,"icon":"thermostat","title":"TS F2","isFailed":false},
-  final Metrics metrics;
+  final Metrics? metrics;
 // "order":{"rooms":0,"elements":0,"dashboard":11,"room":6},
-  final Map<String, int> order;
+  final Map<String, int>? order;
 // "permanently_hidden":false,
-  final bool permanentlyHidden;
+  final bool? permanentlyHidden;
 // "probeType":"thermostat_set_point",
-  final String probeType;
+  final String? probeType;
 // "tags":[],
-  final List<String> tags;
+  final List<String>? tags;
 // "visibility":true,
-  final bool visibility;
+  final bool? visibility;
 // "updateTime":1543532722
-  final int updateTime;
+  final int? updateTime;
 
   Device({
     this.creationTime, this.creatorId, this.customIcons, this.deviceType,
@@ -123,7 +123,7 @@ class DeviceLink {
   DeviceLink(this._devId);
 
   /// get the device by link, possibly updating _positionHint
-  Device getDevice(List<Device> devices) {
+  Device? getDevice(List<Device> devices) {
     //if the device is still in its old position, return it immediately
     if (_positionHint >= 0 && _positionHint < devices.length &&
         devices[_positionHint].id == _devId) return devices[_positionHint];
@@ -138,9 +138,9 @@ class DeviceLink {
 }
 
 class Devices {
-  final bool structureChanged;
-  final int updateTime;
-  final List<Device> devices;
+  final bool? structureChanged;
+  final int? updateTime;
+  final List<Device>? devices;
 
   Devices({this.structureChanged, this.updateTime, this.devices});
 
@@ -150,7 +150,7 @@ class Devices {
       updateTime: json['updateTime'],
       devices: (() {
         var r = json['devices'] as List<dynamic>;
-        var rv = List<Device>();
+        var rv = List<Device>.empty(growable: true);
         for(var v in r) rv.add(Device.fromJson(v));
         return rv;
       })()
@@ -163,9 +163,13 @@ class Devices {
       structureChanged: update.structureChanged,
       updateTime: update.updateTime,  //max???
       devices: () {
-        var m = Map.fromEntries(update.devices.map((dev) => MapEntry(dev.id, dev)));
-        var rv = devices.map((d) => m.containsKey(d.id) ? m.remove(d.id) : d).toList();
-        if (m.isNotEmpty) rv.addAll(m.values);
+        if (devices == null || devices!.isEmpty) return update.devices;
+        if (update.devices == null || update.devices!.isEmpty) return devices;
+        var m = Map.fromEntries(
+            update.devices!.where((dev) => dev.id != null).map((dev) => MapEntry(dev.id!, dev))
+        );
+        var rv = devices!.map((d) => m.containsKey(d.id) ? m.remove(d.id)! : d).toList();
+        rv.addAll(m.values);
         return rv;
       }()
     );
@@ -200,8 +204,9 @@ Future<T> fetch<T>(String p, Settings settings) async {
   if (response.statusCode == 200) {
     // If the call to the server was successful, parse the JSON
     final jsonO = await response.transform(utf8.decoder).transform(JsonDecoder()).first;
-    final zr = ZAResponse<T>.fromJson(jsonO);
-    if (zr.code != 200) return Future<T>.error(AppError.zaAppError(zr.code, zr.message));
+    final zr = ZAResponse<T>.fromJson(jsonO!);
+    if (zr.code != 200)
+      return Future<T>.error(AppError.zaAppError(zr.code ?? 599, zr.message ?? "<No message>"));
     return Future<T>.value(zr.data);
   } else {
     // If that call was not successful, throw an error.
@@ -222,12 +227,7 @@ T dataFromJson<T>(dynamic json) {
 }
 
 List<T> asList<T>(dynamic s) {
-  var r = s as List<dynamic>;
-  var rv = List<T>();
-  for(var v in r) {
-    rv.add(v as T);
-  }
-  return rv;
+  return (s as List<dynamic>).map((v) => v as T).toList();
 }
 
 Map<String, T> asMap<T>(dynamic s) {
@@ -240,14 +240,15 @@ Map<String, T> asMap<T>(dynamic s) {
 }
 
 class ZAResponse<T> {
-  final T data;
-  final int code;
-  final String message;
-  final String error;
+  final T? data;
+  final int? code;
+  final String? message;
+  final String? error;
 
   ZAResponse({this.data, this.code, this.message, this.error});
 
-  factory ZAResponse.fromJson(Map<String, dynamic> json) {
+  factory ZAResponse.fromJson(Object json_object) {
+    var json = json_object as Map<String, dynamic>;
     return ZAResponse<T>(
       data: dataFromJson<T>(json['data']),
       code: json['code'],
@@ -257,6 +258,6 @@ class ZAResponse<T> {
   }
 }
 
-T nvl<T>(T t, T alt) {
+T nvl<T>(T? t, T alt) {
   if (t == null) return alt; else return t;
 }

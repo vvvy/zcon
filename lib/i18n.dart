@@ -9,7 +9,7 @@ class L10ns {
   L10ns(Locale locale): _offset = locale.languageCode == 'ru' ? 1 : 0;
   final int _offset;
 
-  static L10ns of(BuildContext context) => Localizations.of<L10ns>(context, L10ns);
+  static L10ns of(BuildContext context) => Localizations.of<L10ns>(context, L10ns)!;
 
   static final Map<String, List<String>> _localizedValues = {
     'reload': ['Reload', 'Перезагрузить'],
@@ -116,90 +116,90 @@ class L10ns {
     AlertType.Failed: ['failed', 'отказ'],
   };
 
-  final List<Map<View, String>> _viewNames = [
+  final List<Map<AppView, String>> _viewNames = [
     {
-      View.All: "All",
-      View.Temperature: "Temperature",
-      View.Thermostats: "Thermostats",
-      View.Scene: "Scene",
-      View.Switches: "Switches",
-      View.Blinds: "Blinds",
-      View.Battery: "Battery",
-      View.Failed: "Failed",
-      View.Custom1: "Custom1",
-      View.Custom2: "Custom2",
-      View.Custom3: "Custom3",
-      View.Custom4: "Custom4",
-      View.Custom5: "Custom5",
+      AppView.All: "All",
+      AppView.Temperature: "Temperature",
+      AppView.Thermostats: "Thermostats",
+      AppView.Scene: "Scene",
+      AppView.Switches: "Switches",
+      AppView.Blinds: "Blinds",
+      AppView.Battery: "Battery",
+      AppView.Failed: "Failed",
+      AppView.Custom1: "Custom1",
+      AppView.Custom2: "Custom2",
+      AppView.Custom3: "Custom3",
+      AppView.Custom4: "Custom4",
+      AppView.Custom5: "Custom5",
     },{
-      View.All: "Все",
-      View.Temperature: "Температура",
-      View.Thermostats: "Термостаты",
-      View.Scene: "Сценарии",
-      View.Switches: "Выключатели",
-      View.Blinds: "Жалюзи",
-      View.Battery: "Батареи",
-      View.Failed: "Отказы",
-      View.Custom1: "Коллекция1",
-      View.Custom2: "Коллекция2",
-      View.Custom3: "Коллекция3",
-      View.Custom4: "Коллекция4",
-      View.Custom5: "Коллекция5",
+      AppView.All: "Все",
+      AppView.Temperature: "Температура",
+      AppView.Thermostats: "Термостаты",
+      AppView.Scene: "Сценарии",
+      AppView.Switches: "Выключатели",
+      AppView.Blinds: "Жалюзи",
+      AppView.Battery: "Батареи",
+      AppView.Failed: "Отказы",
+      AppView.Custom1: "Коллекция1",
+      AppView.Custom2: "Коллекция2",
+      AppView.Custom3: "Коллекция3",
+      AppView.Custom4: "Коллекция4",
+      AppView.Custom5: "Коллекция5",
     }
   ];
 
 //  String get ok => _localizedValues['ok'][_offset];
 //  String get cancel => _localizedValues['cancel'][_offset];
-  String get reload => _localizedValues['reload'][_offset];
-  String get url => _localizedValues['url'][_offset];
-  String get userName => _localizedValues['userName'][_offset];
-  String get password => _localizedValues['password'][_offset];
-  String get english => _localizedValues['english'][_offset];
-  String get russian => _localizedValues['russian'][_offset];
-  String get systemDefined => _localizedValues['systemDefined'][_offset];
-  String get language => _localizedValues['language'][_offset];
-  String get advanced => _localizedValues['advanced'][_offset];
-  String get viewSettings => _localizedValues['viewSettings'][_offset];
-  String get editViewList => _localizedValues['editViewList'][_offset];
-  String get editCurrentView => _localizedValues['editCurrentView'][_offset];
-  String get updateIntervalSeconds => _localizedValues['updateIntervalSeconds'][_offset];
-  String get intGt5 => _localizedValues['intGt5'][_offset];
-  String get inputRequired => _localizedValues['inputRequired'][_offset];
+  String get reload => _localizedValues['reload']![_offset];
+  String get url => _localizedValues['url']![_offset];
+  String get userName => _localizedValues['userName']![_offset];
+  String get password => _localizedValues['password']![_offset];
+  String get english => _localizedValues['english']![_offset];
+  String get russian => _localizedValues['russian']![_offset];
+  String get systemDefined => _localizedValues['systemDefined']![_offset];
+  String get language => _localizedValues['language']![_offset];
+  String get advanced => _localizedValues['advanced']![_offset];
+  String get viewSettings => _localizedValues['viewSettings']![_offset];
+  String get editViewList => _localizedValues['editViewList']![_offset];
+  String get editCurrentView => _localizedValues['editCurrentView']![_offset];
+  String get updateIntervalSeconds => _localizedValues['updateIntervalSeconds']![_offset];
+  String get intGt5 => _localizedValues['intGt5']![_offset];
+  String get inputRequired => _localizedValues['inputRequired']![_offset];
 
-  String get jsonConfig => _localizedValues['jsonConfig'][_offset];
-  String get invalidJson => _localizedValues['invalidJson'][_offset];
-  String get settings => _localizedValues['settings'][_offset];
-  String get editConfigAdvanced => _localizedValues['editConfigAdvanced'][_offset];
-  String get alerts => _localizedValues['alerts'][_offset];
-  String get reorderHint => _localizedValues['reorderHint'][_offset];
-  String get toTop => _localizedValues['toTop'][_offset];
-  String get toBottom => _localizedValues['toBottom'][_offset];
+  String get jsonConfig => _localizedValues['jsonConfig']![_offset];
+  String get invalidJson => _localizedValues['invalidJson']![_offset];
+  String get settings => _localizedValues['settings']![_offset];
+  String get editConfigAdvanced => _localizedValues['editConfigAdvanced']![_offset];
+  String get alerts => _localizedValues['alerts']![_offset];
+  String get reorderHint => _localizedValues['reorderHint']![_offset];
+  String get toTop => _localizedValues['toTop']![_offset];
+  String get toBottom => _localizedValues['toBottom']![_offset];
 
-  String get open => _localizedValues['open'][_offset];
-  String get closed => _localizedValues['closed'][_offset];
-  String get visLevel => _localizedValues['visLevel'][_offset];
-  String get visVisible => _localizedValues['visVisible'][_offset];
-  String get visHidden => _localizedValues['visHidden'][_offset];
-  String get visAll => _localizedValues['visAll'][_offset];
+  String get open => _localizedValues['open']![_offset];
+  String get closed => _localizedValues['closed']![_offset];
+  String get visLevel => _localizedValues['visLevel']![_offset];
+  String get visVisible => _localizedValues['visVisible']![_offset];
+  String get visHidden => _localizedValues['visHidden']![_offset];
+  String get visAll => _localizedValues['visAll']![_offset];
 
-  String get goToPosition => _localizedValues['goToPosition'][_offset];
-  String get increase => _localizedValues['increase'][_offset];
-  String get startUp => _localizedValues['startUp'][_offset];
-  String get stop => _localizedValues['stop'][_offset];
-  String get startDown => _localizedValues['startDown'][_offset];
-  String get decrease => _localizedValues['decrease'][_offset];
+  String get goToPosition => _localizedValues['goToPosition']![_offset];
+  String get increase => _localizedValues['increase']![_offset];
+  String get startUp => _localizedValues['startUp']![_offset];
+  String get stop => _localizedValues['stop']![_offset];
+  String get startDown => _localizedValues['startDown']![_offset];
+  String get decrease => _localizedValues['decrease']![_offset];
 
-  String get batteryAlertLevel => _localizedValues['batteryAlertLevel'][_offset];
-  String get tempLoBound => _localizedValues['tempLoBound'][_offset];
-  String get tempHiBound => _localizedValues['tempHiBound'][_offset];
+  String get batteryAlertLevel => _localizedValues['batteryAlertLevel']![_offset];
+  String get tempLoBound => _localizedValues['tempLoBound']![_offset];
+  String get tempHiBound => _localizedValues['tempHiBound']![_offset];
 
-  String get int0to100 => _localizedValues['int0to100'][_offset];
-  String get double => _localizedValues['double'][_offset];
+  String get int0to100 => _localizedValues['int0to100']![_offset];
+  String get double => _localizedValues['double']![_offset];
 
-  String get visualThresholds => _localizedValues['visualThresholds'][_offset];
-  String get setPointBlueCircleThreshold => _localizedValues['setPointBlueCircleThreshold'][_offset];
-  String get tempYellowCircleThreshold => _localizedValues['tempYellowCircleThreshold'][_offset];
-  String get batteryYellowCircleThreshold => _localizedValues['batteryYellowCircleThreshold'][_offset];
+  String get visualThresholds => _localizedValues['visualThresholds']![_offset];
+  String get setPointBlueCircleThreshold => _localizedValues['setPointBlueCircleThreshold']![_offset];
+  String get tempYellowCircleThreshold => _localizedValues['tempYellowCircleThreshold']![_offset];
+  String get batteryYellowCircleThreshold => _localizedValues['batteryYellowCircleThreshold']![_offset];
 
   //String get ZZZ => _localizedValues['ZZZ'][_offset];
   //String get ZZZ => _localizedValues['ZZZ'][_offset];
@@ -207,39 +207,39 @@ class L10ns {
 
   String _errorString(String Function(String) envelope, AppError err) {
     if (_localizedValues.containsKey(err.errCode))
-      return envelope(_localizedValues[err.errCode][_offset]);
+      return envelope(_localizedValues[err.errCode]![_offset]);
     else if (_localizedValuesFSS.containsKey(err.errCode))
-      return envelope(_localizedValuesFSS[err.errCode][_offset](err.extraMessage));
+      return envelope(_localizedValuesFSS[err.errCode]![_offset](err.extraMessage));
     else
       return envelope(err.extraMessage);
   }
   String Function(AppError err) get error =>
-          (err) => _errorString(_localizedValuesFSS['error'][_offset], err);
+          (err) => _errorString(_localizedValuesFSS['error']![_offset], err);
   String Function(AppError err) get errorNL =>
-          (err) => _errorString(_localizedValuesFSS['errorNL'][_offset], err);
+          (err) => _errorString(_localizedValuesFSS['errorNL']![_offset], err);
   //String Function(String) get error => _error[_offset];
   //String Function(String) get errorNL => _localizedValuesFSS['errorNL'][_offset];
 
   String Function(PopupType type, dynamic detail) get popup => (type, detail) {
     switch(type) {
       case PopupType.CommErrorTransient:
-        return _errorString(_localizedValuesFSS['commErrorTransient'][_offset], detail as AppError);
+        return _errorString(_localizedValuesFSS['commErrorTransient']![_offset], detail as AppError);
       default:
         print("ERROR: Unhandled PopupType in L10ns: $type");
         return "[$type]";
     }
   };
 
-  String Function(String) get activating => _localizedValuesFSS['activating'][_offset];
-  String Function(String) get updating => _localizedValuesFSS['updating'][_offset];
+  String Function(String) get activating => _localizedValuesFSS['activating']![_offset];
+  String Function(String) get updating => _localizedValuesFSS['updating']![_offset];
   //String Function(String) get errorNL => _errorNL[_offset];
   //String Function(String) get activating => _activating[_offset];
   //String Function(String) get updating => _updating[_offset];
   String Function(String, bool) get settingOnOff => _settingOnOff[_offset];
   String Function(String, dynamic) get settingLevel => _settingLevel[_offset];
   String Function(Duration) get elapsed => _elapsed[_offset];
-  String Function(Alert) get alertText => (a) => "${a.count}: ${_alertTypes[a.type][_offset]}";
-  ViewNameTranslator get viewNameOf => (id) =>_viewNames[_offset][id];
+  String Function(Alert) get alertText => (a) => "${a.count}: ${_alertTypes[a.type]![_offset]}";
+  ViewNameTranslator get viewNameOf => (id) =>_viewNames[_offset][id]!;
 }
 
 class L10nsDelegate extends LocalizationsDelegate<L10ns> {
@@ -262,7 +262,7 @@ class L10nsDelegate extends LocalizationsDelegate<L10ns> {
 enum OverriddenLocaleCode { None, EN, RU }
 
 class OverriddenLocaleCodeSerDe  {
-  static OverriddenLocaleCode de(String input) {
+  static OverriddenLocaleCode de(String? input) {
     switch (input) {
       case 'EN':
         return OverriddenLocaleCode.EN;
@@ -289,7 +289,7 @@ const localeEN = Locale('en', '');
 const localeRU = Locale('ru', '');
 const supportedLocales = [localeEN, localeRU];
 
-Locale _localeFromCode(OverriddenLocaleCode lc) {
+Locale? _localeFromCode(OverriddenLocaleCode lc) {
   switch(lc) {
     case OverriddenLocaleCode.EN: return localeEN;
     case OverriddenLocaleCode.RU: return localeRU;
@@ -298,14 +298,14 @@ Locale _localeFromCode(OverriddenLocaleCode lc) {
 }
 
 class OverriddenL10nsDelegate extends L10nsDelegate {
-  final Locale _overriddenLocale;
+  final Locale? _overriddenLocale;
   const OverriddenL10nsDelegate(this._overriddenLocale);
 
   @override
   bool isSupported(Locale locale) => _overriddenLocale != null;
 
   @override
-  Future<L10ns> load(Locale locale) => super.load(_overriddenLocale);
+  Future<L10ns> load(Locale locale) => super.load(_overriddenLocale!);
 
   @override
   bool shouldReload(L10nsDelegate old) => true;
@@ -317,7 +317,7 @@ class OverriddenL10nsDelegate extends L10nsDelegate {
 }
 
 class OverriddenMaterialDelegate extends LocalizationsDelegate<MaterialLocalizations> {
-  final Locale _overriddenLocale;
+  final Locale? _overriddenLocale;
   final LocalizationsDelegate<MaterialLocalizations> _super =
       GlobalMaterialLocalizations.delegate;
   const OverriddenMaterialDelegate(this._overriddenLocale);
@@ -326,7 +326,7 @@ class OverriddenMaterialDelegate extends LocalizationsDelegate<MaterialLocalizat
   bool isSupported(Locale locale) => _overriddenLocale != null;
 
   @override
-  Future<MaterialLocalizations> load(Locale locale) => _super.load(_overriddenLocale);
+  Future<MaterialLocalizations> load(Locale locale) => _super.load(_overriddenLocale!);
 
   @override
   bool shouldReload(LocalizationsDelegate<MaterialLocalizations> old) => true;
@@ -338,7 +338,7 @@ class OverriddenMaterialDelegate extends LocalizationsDelegate<MaterialLocalizat
 }
 
 class OverriddenWidgetsDelegate extends LocalizationsDelegate<WidgetsLocalizations> {
-  final Locale _overriddenLocale;
+  final Locale? _overriddenLocale;
   final LocalizationsDelegate<WidgetsLocalizations> _super =
       GlobalWidgetsLocalizations.delegate;
   const OverriddenWidgetsDelegate(this._overriddenLocale);
@@ -347,7 +347,7 @@ class OverriddenWidgetsDelegate extends LocalizationsDelegate<WidgetsLocalizatio
   bool isSupported(Locale locale) => _overriddenLocale != null;
 
   @override
-  Future<WidgetsLocalizations> load(Locale locale) => _super.load(_overriddenLocale);
+  Future<WidgetsLocalizations> load(Locale locale) => _super.load(_overriddenLocale!);
 
   @override
   bool shouldReload(LocalizationsDelegate<WidgetsLocalizations> old) => true;
@@ -421,8 +421,11 @@ class AppError {
     if (source is AppError) return source;
     return AppError("unknown", source.toString());
   }
+
+  @override
+  String toString() => "AppError(code=${errCode}, message=${extraMessage})";
 }
 
 /// Helper function to extract MaterialLocalizations from the context
 MaterialLocalizations matLoc(BuildContext context) =>
-    Localizations.of<MaterialLocalizations>(context, MaterialLocalizations);
+    Localizations.of<MaterialLocalizations>(context, MaterialLocalizations)!;

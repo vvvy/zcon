@@ -29,25 +29,25 @@ class GetThermostatSetPointState extends State<GetThermostatSetPoint> {
       Text(_value.toString()),
       Slider(value: _value, min: 5.0, max: 30.0, divisions: 50, onChanged: (w) { setState(() { _value = w; }); }),
       Row(children: <Widget>[
-        Flexible(child: FlatButton(child: Text("5"), onPressed: (){ setState(() { _value = 5.0; }); })),
-        Flexible(child: FlatButton(child: Text("7"), onPressed: (){ setState(() { _value = 7.0; }); })),
-        Flexible(child: FlatButton(child: Text("21"), onPressed: (){ setState(() { _value = 21.0; }); })),
-        Flexible(child: FlatButton(child: Text("22"), onPressed: (){ setState(() { _value = 22.0; }); })),
-        Flexible(child: FlatButton(child: Text("23"), onPressed: (){ setState(() { _value = 23.0; }); })),
+        Flexible(child: TextButton(child: Text("5"), onPressed: (){ setState(() { _value = 5.0; }); })),
+        Flexible(child: TextButton(child: Text("7"), onPressed: (){ setState(() { _value = 7.0; }); })),
+        Flexible(child: TextButton(child: Text("21"), onPressed: (){ setState(() { _value = 21.0; }); })),
+        Flexible(child: TextButton(child: Text("22"), onPressed: (){ setState(() { _value = 22.0; }); })),
+        Flexible(child: TextButton(child: Text("23"), onPressed: (){ setState(() { _value = 23.0; }); })),
       ],),
       Padding(
           padding: const EdgeInsets.symmetric(vertical: 16.0),
           child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                FlatButton(
+                TextButton(
                   child: Text(materialLoc.cancelButtonLabel),
                   onPressed: () => Navigator.pop(context, null),
                 ),
-                FlatButton(
+                TextButton(
                   child: Text(materialLoc.okButtonLabel),
                   onPressed: () {
-                    if (_formKey.currentState.validate())
+                    if (_formKey.currentState!.validate())
                       Navigator.pop(context, _value);
                   },
                 ),
@@ -91,7 +91,7 @@ class GetSwitchMultilevelState extends State<GetSwitchMultilevel> {
 
   final DeviceLink _devLink;
   final ErrorF _errorF;
-  int _value;
+  int? _value;
 
   GetSwitchMultilevelState(NVSwitchMultilevel nv, this._errorF):
     _devLink = nv.getLink(),
@@ -104,13 +104,13 @@ class GetSwitchMultilevelState extends State<GetSwitchMultilevel> {
     final materialLoc = matLoc(context);
     final myLoc = L10ns.of(context);
     final model = MainModel.of(context, rebuildOnChange: true);
-    final nv = model.getNVbyLink(_devLink, myLoc) as NVSwitchMultilevel;
+    final nv = model.getNVbyLink(_devLink, myLoc) as NVSwitchMultilevel?;
     if (nv == null) return
       Dialog(child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text("Null NV"),
-          FlatButton(
+          TextButton(
             child: Text(materialLoc.closeButtonLabel),
             onPressed: () => Navigator.pop(context, null),
           )
@@ -126,14 +126,14 @@ class GetSwitchMultilevelState extends State<GetSwitchMultilevel> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(NVSwitchMultilevel.nvText(_value, myLoc)),
-              Slider(value: nv.value.toDouble(), min: 0.0, max: 99.0, divisions: 50, onChanged: null, label: "current"),
-              Slider(value: _value.toDouble(), min: 0.0, max: 99.0, divisions: 50, onChanged: (w) { setState(() { _value = w.toInt(); }); }),
+              Slider(value: nv.value!.toDouble(), min: 0.0, max: 99.0, divisions: 50, onChanged: null, label: "current"),
+              Slider(value: _value!.toDouble(), min: 0.0, max: 99.0, divisions: 50, onChanged: (w) { setState(() { _value = w.toInt(); }); }),
               Row(children: <Widget>[
-                Flexible(child: FlatButton(child: Text(myLoc.closed), onPressed: (){ setState(() { _value = 0; }); })),
-                Flexible(child: FlatButton(child: Text("25%"), onPressed: (){ setState(() { _value = 25; }); })),
-                Flexible(child: FlatButton(child: Text("50%"), onPressed: (){ setState(() { _value = 50; }); })),
-                Flexible(child: FlatButton(child: Text("75%"), onPressed: (){ setState(() { _value = 75; }); })),
-                Flexible(child: FlatButton(child: Text(myLoc.open), onPressed: (){ setState(() { _value = 99; }); })),
+                Flexible(child: TextButton(child: Text(myLoc.closed), onPressed: (){ setState(() { _value = 0; }); })),
+                Flexible(child: TextButton(child: Text("25%"), onPressed: (){ setState(() { _value = 25; }); })),
+                Flexible(child: TextButton(child: Text("50%"), onPressed: (){ setState(() { _value = 50; }); })),
+                Flexible(child: TextButton(child: Text("75%"), onPressed: (){ setState(() { _value = 75; }); })),
+                Flexible(child: TextButton(child: Text(myLoc.open), onPressed: (){ setState(() { _value = 99; }); })),
               ],),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -143,7 +143,7 @@ class GetSwitchMultilevelState extends State<GetSwitchMultilevel> {
                     IconButton(
                         icon: Icon(Icons.check_circle),
                         tooltip: myLoc.goToPosition,
-                        onPressed: () => nv.onSetLevel(_value, _errorF)
+                        onPressed: () => nv.onSetLevel(_value!, _errorF)
                     ),
                     IconButton(
                         icon: Icon(Icons.arrow_drop_up),
@@ -178,7 +178,7 @@ class GetSwitchMultilevelState extends State<GetSwitchMultilevel> {
                   child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        FlatButton(
+                        TextButton(
                           child: Text(materialLoc.closeButtonLabel),
                           onPressed: () => Navigator.pop(context, null),
                         )

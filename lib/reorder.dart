@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:zcon/i18n.dart';
 
-typedef String TitleF<T>(T item);
+typedef String? TitleF<T>(T item);
 
 class ReorderState<T> extends State<Reorder<T>> {
-  List<T>   _l;
+  List<T?>   _l;
   final TitleF<T> _titleF;
 
-  ReorderState(List<T> l, TitleF<T> titleF): _l = l, _titleF = titleF;
+  ReorderState(List<T?> l, TitleF<T> titleF): _l = l, _titleF = titleF;
 
   int _item = -1, _pos = -1; //"move item before pos"
 
-  List<T> _buildList() {
+  List<T?> _buildList() {
     if (_item < 0 || _pos < 0)
       return _l;
     if (_item != _pos) {
-      List<T> l = List.from(_l);
+      List<T?> l = List.from(_l);
       l.removeAt(_item);
       l.insert(_pos, _l[_item]);
       return l;
@@ -40,12 +40,12 @@ class ReorderState<T> extends State<Reorder<T>> {
     _set(-1, -1);
   }
 
-  Widget _buildRow(String title, int index, BuildContext context) {
+  Widget _buildRow(String? title, int index, BuildContext context) {
     return
       LongPressDraggable<int>(
         child: DragTarget<int>(
             builder: (c, x, y) { return title == null ? Divider() : ListTile(title: Text(title)); },
-            onWillAccept: (j) { _set(j, index); return false; },
+            onWillAcceptWithDetails: (j) { _set(j.data, index); return false; },
             onLeave: (j) { _unset(); },
             ),
         //childWhenDragging: ListTile(title: Text(title)),
@@ -58,7 +58,7 @@ class ReorderState<T> extends State<Reorder<T>> {
     var l = _buildList();
     var lr = <Widget>[];
     for (var i = 0; i < l.length; i++)
-      lr.add(_buildRow(_titleF(l[i]), i, context));
+      lr.add(_buildRow(_titleF(l[i]!), i, context));
     return lr;
   }
 
@@ -87,28 +87,28 @@ class ReorderState<T> extends State<Reorder<T>> {
                 Text(myLoc.reorderHint, style: _smallerFont),
                 DragTarget<int>(
                     builder: (c, x, y) => _dropPanel(x.isNotEmpty, myLoc.toTop),
-                    onWillAccept: (x) { _set(x, 0); return true; },
+                    onWillAcceptWithDetails: (x) { _set(x.data, 0); return true; },
                     onLeave: (x) => _unset(),
-                    onAccept: (x) => _commit()
+                    onAcceptWithDetails: (x) => _commit()
                 ),
                 Expanded(child: DragTarget<int>(
                   builder: (c, x, y) => ListView(children: _buildRowList()),
-                  onWillAccept: (x) => true,
-                  onAccept: (x) => _commit()
+                    onWillAcceptWithDetails: (x) => true,
+                    onAcceptWithDetails: (x) => _commit()
                 )),
                 DragTarget<int>(
                     builder: (c, x, y) => _dropPanel(x.isNotEmpty, myLoc.toBottom),
-                    onWillAccept: (x) {  _set(x, _l.length - 1); return true; },
+                    onWillAcceptWithDetails: (x) { _set(x.data, _l.length - 1); return true; },
                     onLeave: (x) => _unset(),
-                    onAccept: (x) => _commit()
+                    onAcceptWithDetails: (x) => _commit()
                 ),
                 Row(
                   children: <Widget>[
-                    FlatButton(
+                    TextButton(
                         child: Text(materialLoc.okButtonLabel),
                         onPressed: () => Navigator.pop(context, _l)
                     ),
-                    FlatButton(
+                    TextButton(
                         child: Text(materialLoc.cancelButtonLabel),
                         onPressed: () => Navigator.pop(context, null)
                     )
@@ -122,10 +122,10 @@ class ReorderState<T> extends State<Reorder<T>> {
 }
 
 class Reorder<T> extends StatefulWidget {
-  final List<T>   _l;
+  final List<T?>  _l;
   final TitleF<T> _titleF;
 
-  Reorder(List<T> l, TitleF<T> titleF): _l = l, _titleF = titleF;
+  Reorder(List<T?> l, TitleF<T> titleF): _l = l, _titleF = titleF;
 
   @override
   State<StatefulWidget> createState() {

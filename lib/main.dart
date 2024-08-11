@@ -69,7 +69,9 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
                       padding: EdgeInsets.zero,
                       children: <Widget>[
                         DrawerHeader(
-                          child: Text('ZConsole', textScaleFactor: 1.5, style: TextStyle(color: Colors.white)),
+                          child: Text('ZConsole',
+                              textScaler: TextScaler.linear(1.5),
+                              style: TextStyle(color: Colors.white)),
                           decoration: BoxDecoration(
                               color: Colors.blue,
                               image: const DecorationImage(image: AssetImage("assets/icon/lamp.png"))
@@ -99,15 +101,15 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
                             _editJSON(context);
                           },
                         ),
-                      if (mainModel.devState.alerts.isNotEmpty) Divider(),
-                      if (mainModel.devState.alerts.isNotEmpty) Text(L10ns.of(context).alerts, textAlign: TextAlign.center,),
-                      for (var alert in mainModel.devState.alerts)
+                      if (mainModel.devState!.alerts.isNotEmpty) Divider(),
+                      if (mainModel.devState!.alerts.isNotEmpty) Text(L10ns.of(context).alerts, textAlign: TextAlign.center,),
+                      for (var alert in mainModel.devState!.alerts)
                         ListTile(
                           leading: Icon(Icons.warning, color: Colors.yellow),
                           title: Text(L10ns.of(context).alertText(alert)),
                           onTap: () {
                             Navigator.pop(context);
-                            if (alert.filterId >= 0) mainModel.devState.setFilter(alert.filterId);
+                            if (alert.filterId >= 0) mainModel.devState!.setFilter(alert.filterId);
                           },
                         )
                       ],
@@ -144,9 +146,9 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
 
   Widget _buildRow(Device d, BuildContext context, MainModel mainModel) {
     final myLoc = L10ns.of(context);
-    String title = d.metrics.title;
-    NV nv = mainModel.nvc.getNV(d, myLoc);
-    var notF = (String s) => Scaffold.of(context).showSnackBar(SnackBar(content: Text(s)));
+    String title = d.metrics?.title ?? "?";
+    NV? nv = mainModel.nvc!.getNV(d, myLoc);
+    var notF = (String s) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s)));
     var errorF = (AppError err) => notF(myLoc.error(err));
 
     Widget trailing = (nv) {
@@ -157,10 +159,10 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
       } else if (nv is NVSwitch) {
         return Switch(value: nv.value, onChanged: (v) async { notF(myLoc.settingOnOff(title, v)); nv.onToggle(v, errorF); });
       } else if (nv is NVThermostatSetPoint) {
-        return FlatButton(child: Text(nv.title), onPressed: () async {
+        return TextButton(child: Text(nv.title), onPressed: () async {
           final level = await showDialog(
               context: context,
-              builder: (context) => GetThermostatSetPoint(nv.value)
+              builder: (context) => GetThermostatSetPoint(nv.value ?? 0.0)
           );
           if (level != null) {
             notF(myLoc.settingLevel(title, level));
@@ -168,7 +170,7 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
           }
         });
       } else if (nv is NVSwitchMultilevel) {
-        return FlatButton(child: Text(nv.title), onPressed: () => showDialog(
+        return TextButton(child: Text(nv.title), onPressed: () => showDialog(
               context: context,
               builder: (context) => _mainModel.scoped(GetSwitchMultilevel(nv, errorF))
           ));
@@ -180,14 +182,14 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
     return ListTile(
         title: Text(title, style: _biggerFont),
         leading: avatar(d, mainModel.settings),
-        subtitle: Text(_formatUpdateTime(d.updateTime, context), style: _smallerFont),
+        subtitle: Text(_formatUpdateTime(d.updateTime!, context), style: _smallerFont),
         onLongPress: () async { if(nv is NVUpdate) { notF(myLoc.updating(title)); nv.onUpdate(errorF); } },
         trailing: trailing
     );
   }
 
   Widget _buildMainView(BuildContext context, MainModel mainModel) {
-    var v = mainModel.devState.getDeviceView((type, detail) => Scaffold.of(context).showSnackBar(
+    var v = mainModel.devState!.getDeviceView((type, detail) => ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(L10ns.of(context).popup(type, detail)))
     ));
     if (v is DevViewFull) {
@@ -198,8 +200,13 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
       );
     } else if (v is DevViewEmpty) {
       if (v.error != null)
-        return Text(L10ns.of(context).errorNL(v.error), style:
-        DefaultTextStyle.of(context).style.apply(fontSizeFactor: 1.5, color: Colors.red, fontWeightDelta: 3),
+        return Text(
+          L10ns.of(context).errorNL(v.error!),
+          style: DefaultTextStyle.of(context).style.apply(
+              fontSizeFactor: 1.5,
+              color: Colors.red,
+              fontWeightDelta: 3
+          ),
         );
       else if (v.isLoading)
         return CircularProgressIndicator();
@@ -215,12 +222,12 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
     final vs = await showDialog<List<ReorderListItem<String>>>(
       context: context,
       builder: (context) => Reorder<ReorderListItem<String>>(
-        model.devState.startEditList(),
-        (s) => s.isSeparator ? null : s.i.name
+        model.devState!.startEditList()!,
+        (s) => s.i?.name
       )
     );
     if (vs != null)
-      model.devState.endEditList(vs);
+      model.devState!.endEditList(vs);
   }
 
   static Future<void> _masterEditor(BuildContext context) async {
@@ -228,25 +235,25 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
     final vs = await showDialog<List<ReorderListItem<int>>>(
         context: context,
         builder: (context) => Reorder<ReorderListItem<int>>(
-          model.devState.startEditMaster(L10ns.of(context).viewNameOf),
-          (s) => s.isSeparator ? null : s.i.name
+          model.devState!.startEditMaster(L10ns.of(context).viewNameOf),
+          (s) => s.i?.name
         )
     );
     if (vs != null)
-      model.devState.endEditMaster(vs);
+      model.devState!.endEditMaster(vs);
   }
 
   Future<void> _editSettings(BuildContext context) async {
     final mainModel = MainModel.of(context);
 
-    FVC viewEditor =
-      mainModel.devState.listsOnline && mainModel.devState.isListEditable ?
+    FVC? viewEditor =
+      mainModel.devState!.listsOnline && mainModel.devState!.isListEditable ?
       _viewEditor : null;
 
-    FVC masterEditor = mainModel.devState.listsOnline ?
+    FVC? masterEditor = mainModel.devState!.listsOnline ?
       _masterEditor : null;
 
-    final orig = mainModel.settings;
+    final orig = mainModel.settings!;
     final edited = await showDialog<Settings>(
       context: context,
       builder: (context) => mainModel.scoped(Preferences(orig, masterEditor, viewEditor))
@@ -271,24 +278,24 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
     final w = <Widget>[];
     final model = MainModel.of(context);
 
-    List<Alert> alerts = model.devState.alerts;
+    List<Alert> alerts = model.devState!.alerts;
     if (alerts.isNotEmpty) {
       int i = alerts.map((a) => a.filterId).reduce((a, b) => a > b ? a : b);
       w.add(IconButton(
         icon: Icon(Icons.warning, color: Colors.yellow),
         tooltip: alerts.map((a) => L10ns.of(context).alertText(a)).join("\n"),
-        onPressed: (i >= 0) ? () => model.devState.setFilter(i) : null,
+        onPressed: (i >= 0) ? () => model.devState!.setFilter(i) : null,
       ));
     }
 
-    if (model.devState.listsOnline) {
+    if (model.devState!.listsOnline) {
       w.add(DropdownButton<int>(
-          value: model.devState.getFilter(),
+          value: model.devState!.getFilter(),
           items:
-            model.devState.getAvailableFilters(L10ns.of(context).viewNameOf)
+            model.devState!.getAvailableFilters(L10ns.of(context).viewNameOf)
                 .map((n) => DropdownMenuItem<int>(value: n.id, child: Text(n.name)))
                 .toList(),
-          onChanged: (s) => model.devState.setFilter(s)
+          onChanged: (s) => { if (s != null ) model.devState!.setFilter(s) }
       ));
     }
 
@@ -300,7 +307,7 @@ class ZConAppState extends State<ZConApp> with WidgetsBindingObserver {
     w.add(IconButton(
         icon: Icon(Icons.refresh),
         //TODO somewhat better e.g. animation
-        color: model.devState.isLoading ? Colors.blueGrey : Colors.white,
+        color: (model.devState?.isLoading?? false) ? Colors.blueGrey : Colors.white,
         onPressed: () {
           model.reload();
         }));
