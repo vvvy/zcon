@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:zcon/i18n.dart';
-import 'package:zcon/pref.dart';
 
 class Metrics {
 // "scaleTitle":"°C",
@@ -182,22 +181,33 @@ String joinPaths(String a, String b) {
   return a + ((a.endsWith("/") || b.isEmpty || b.startsWith(new RegExp("[/?#]"))) ? "" : "/") + b;
 }
 
+class FetchConfig {
+  final String url;
+  final String username;
+  final String password;
+  FetchConfig({
+    required this.url,
+    required this.username,
+    required this.password,
+  });
+}
+
 //https://dacha.vybornov.name/ZAutomation/api/v1/devices?since=1543949982
 //{"data":{"structureChanged":false,"updateTime":1543949984,"devices":[]},"code":200,"message":"200 OK","error":null}
 
-Future<T> fetch<T>(String p, Settings settings) async {
-  if (settings.url.isEmpty) return Future.error(AppError.urlNeeded());
+Future<T> fetch<T>(String p, FetchConfig config) async {
+  if (config.url.isEmpty) return Future.error(AppError.urlNeeded());
     //Future.error("URL not set - please set it via settings");
   HttpClient client = new HttpClient();
-  var url = joinPaths(joinPaths(settings.url, "ZAutomation/api/v1/devices"), p);
+  var url = joinPaths(joinPaths(config.url, "ZAutomation/api/v1/devices"), p);
   print("Connecting to: $url");
   var uri = Uri.tryParse(url);
   if (uri == null) {
     return Future.error(AppError.urlInvalid());
   }
-  if (settings.username != "")
+  if (config.username != "")
     client.addCredentials(uri, "",
-        new HttpClientBasicCredentials(settings.username, settings.password));
+        new HttpClientBasicCredentials(config.username, config.password));
   HttpClientRequest request = await client.getUrl(uri);
   HttpClientResponse response = await request.close();
   //TODO if content-type is json, parse it even if statusCode != 200

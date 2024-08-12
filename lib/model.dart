@@ -5,6 +5,7 @@ import 'package:zcon/i18n.dart';
 import 'package:zcon/nv.dart';
 import 'package:zcon/pdu.dart';
 import 'package:zcon/pref.dart';
+import 'package:zcon/nio.dart';
 
 
 enum CommonModelEvents {
@@ -28,11 +29,15 @@ class L10nModel extends Model {
   void rebuild() { notifyListeners(); }
 }
 
-class MainModel extends Model {
+class MainModel extends Model implements NetworkListener {
   DevState? devState;
   NVController? nvc;
   Settings? _settings;
   ViewConfig? _viewConfig;
+  NioSender? _nioSender;
+  FetchConfig? _fetchConfig;
+
+  bool _networkIoActive = false;
 
   MainModel() {
     nvc = NVController(this);
@@ -45,6 +50,7 @@ class MainModel extends Model {
 
   Settings? get settings => _settings;
   ViewConfig? get viewConfig => _viewConfig;
+  FetchConfig? get fetchConfig => _fetchConfig;
 
   NV? getNVbyLink(DeviceLink link, L10ns l10ns) {
     final device = devState!.getDeviceByLink(link);
@@ -61,10 +67,41 @@ class MainModel extends Model {
     setDevState(DevStateEmpty.init(this));
   }
 
+  void onNetworkEvent(NetworkIndication ind) {
+    print("main thread received ni: ${ind}");
+    switch (ind) {
+      case FetchStart(isFull: final isFull):
+        _networkIoActive = true;
+        //devState?.isLoading = true;
+        break;
+      case FetchResult(isFull: final isFull, devices: final devices, error: final error):
+        _networkIoActive = false;
+        break;
+      case CommandStart(id: final id):
+        _networkIoActive = true;
+        break;
+      case CommandResult(id: final id, error: final error):
+        _networkIoActive = false;
+        break;
+    }
+    notifyListeners();
+  }
+
   void init(L10nModel l10nModel) {
+    _nioSender = startNio(this);
     reload();
     Future.microtask(() async {
       _settings = await readSettings();
+      _fetchConfig = FetchConfig(url: _settings!.url,
+          username: _settings!.username,
+          password: _settings!.password
+      );
+      _nioSender!.submit(Configure(NioConfig(
+          fetchConfig: _fetchConfig!,
+          intervalMainS: _settings!.intervalMainS,
+          intervalUpdateS: _settings!.intervalUpdateS,
+          intervalErrorRetryS: _settings!.intervalErrorRetryS
+      )));
       _viewConfig = await readViewConfig();
       l10nModel.setLocale(_settings!.localeCode);
       reload();
@@ -74,8 +111,10 @@ class MainModel extends Model {
   void submit(dynamic event) {
     print("submit $event");
     if (event == CommonModelEvents.AppPaused) {
+      _nioSender?.submit(Pause());
       setDevState(DevStateEmpty(devState!, error: AppError.appPaused()));
     } else if (event == CommonModelEvents.AppResumed) {
+      _nioSender?.submit(Resume());
       setDevState(DevStateEmpty.init(this));
     } else if (event == CommonModelEvents.RemoteReloadRequest) {
       if (devState != null) devState!.flagNeedsUpdate();

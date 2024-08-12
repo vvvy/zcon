@@ -172,7 +172,7 @@ class DevStateNonEmpty extends DevState {
     _model.submit(CommonModelEvents.UpdateUI);
 
     try {
-      final ds = await fetch<Devices>("?since=${_devices.updateTime}", _model.settings!);
+      final ds = await fetch<Devices>("?since=${_devices.updateTime}", _model.fetchConfig!);
       print("Incremental update ok, n=${ds.devices!.length}");
       _isLoading = false;
       _errorCount = 0;
@@ -256,10 +256,10 @@ class DevStateEmpty extends DevState {
   void initCond() {
     print("initCond ${_model.settings} ${_model.viewConfig} e=${error}");
     if (_model.settings != null && _model.viewConfig != null && error == null)
-      Future.microtask(() => _init(_model.settings!, _model.viewConfig!));
+      Future.microtask(() => _init(_model.settings!, _model.fetchConfig!, _model.viewConfig!));
   }
 
-  void _init(Settings settings, ViewConfig viewConfig) async {
+  void _init(Settings settings, FetchConfig fetchConfig, ViewConfig viewConfig) async {
     print("Starting full update");
     _isLoading = true;
     _model.submit(CommonModelEvents.UpdateUI);
@@ -267,7 +267,7 @@ class DevStateEmpty extends DevState {
 
     devicesF = () async {
       try {
-        final ds = await fetch<Devices>("", settings);
+        final ds = await fetch<Devices>("", fetchConfig);
         print("Full update ok, n=${ds.devices!.length}");
         _isLoading = false;
         error = null;

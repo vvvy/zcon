@@ -137,7 +137,7 @@ class NVController {
   void exec(String c0, String c1, String c2, ErrorF errorF) async {
     print("Exec: '$c0/$c1/$c2'");
     try {
-      final _ = await fetch<Null>("$c0/$c1/$c2", model.settings!);
+      final _ = await fetch<Null>("$c0/$c1/$c2", model.fetchConfig!);
       print("Exec ok");
       model.submit(CommonModelEvents.RemoteReloadRequest);
     } catch (err) { errorF(AppError.convert(err)); }
