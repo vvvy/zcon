@@ -4,18 +4,18 @@ import 'package:zcon/i18n.dart';
 typedef String? TitleF<T>(T item);
 
 class ReorderState<T> extends State<Reorder<T>> {
-  List<T?>   _l;
+  List<T>   _l;
   final TitleF<T> _titleF;
 
-  ReorderState(List<T?> l, TitleF<T> titleF): _l = l, _titleF = titleF;
+  ReorderState(List<T> l, TitleF<T> titleF): _l = l, _titleF = titleF;
 
   int _item = -1, _pos = -1; //"move item before pos"
 
-  List<T?> _buildList() {
+  List<T> _buildList() {
     if (_item < 0 || _pos < 0)
       return _l;
     if (_item != _pos) {
-      List<T?> l = List.from(_l);
+      List<T> l = List.from(_l);
       l.removeAt(_item);
       l.insert(_pos, _l[_item]);
       return l;
@@ -122,10 +122,10 @@ class ReorderState<T> extends State<Reorder<T>> {
 }
 
 class Reorder<T> extends StatefulWidget {
-  final List<T?>  _l;
+  final List<T>  _l;
   final TitleF<T> _titleF;
 
-  Reorder(List<T?> l, TitleF<T> titleF): _l = l, _titleF = titleF;
+  Reorder(List<T> l, TitleF<T> titleF): _l = l, _titleF = titleF;
 
   @override
   State<StatefulWidget> createState() {

@@ -7,17 +7,14 @@ import 'package:zcon/pdu.dart';
 import 'package:zcon/pref.dart';
 import 'package:zcon/nio.dart';
 
+import 'devlist.dart';
 
-enum CommonModelEvents {
-  AppPaused,
-  AppResumed,
-  RemoteReloadRequest,
-  Reload,
-  UpdateUI,
-}
+sealed class ModelEvent { }
 
-class ViewConfigUpdate { final ViewConfig viewConfig; ViewConfigUpdate(this.viewConfig); }
-//class SettingsUpdate { final Settings settings; SettingsUpdate(this.settings); }
+class AppPaused extends ModelEvent { }
+class AppResumed extends ModelEvent { }
+class ViewConfigUpdate extends ModelEvent { final ViewConfig viewConfig; ViewConfigUpdate(this.viewConfig); }
+class SettingsUpdate extends ModelEvent { final Settings settings; SettingsUpdate(this.settings); }
 
 class L10nModel extends Model {
   final locales = LocaleSupport();
@@ -29,19 +26,68 @@ class L10nModel extends Model {
   void rebuild() { notifyListeners(); }
 }
 
-class MainModel extends Model implements NetworkListener {
-  DevState? devState;
-  NVController? nvc;
+mixin DevListControllerMixin {
+  MainModel get _model;
+  final DevListController _dlc = DevListController();
+
+  int getFilter() => _dlc.current;
+  List<IdName<int>> getAvailableFilters(ViewNameTranslator vnt) => _dlc.getMaster(vnt);
+  void setFilter(int current) {
+    _dlc.current = current;
+    //TODO move _current under separate persistence key
+    // (so we don't write entire config when moving between views)
+    _model.submit(ViewConfigUpdate(_dlc.makeConfig()));
+    //writeConfig(_dlc.makeConfig()).then((_) => parent.setDevState(this));
+  }
+
+  bool get listsOnline => _dlc.isOnline;
+  bool get isListEditable => _dlc.isListEditable;
+
+  List<ReorderListItem<String>> startEditList() => _dlc.startEditList();
+
+  void endEditList(List<ReorderListItem<String>> result) {
+    _dlc.endEditList(result);
+    _model.submit(ViewConfigUpdate(_dlc.makeConfig()));
+    //writeConfig(_dlc.makeConfig()).then((_) => parent.setDevState(this));
+  }
+
+  List<ReorderListItem<int>> startEditMaster(ViewNameTranslator vnt) => _dlc.startEditMaster(vnt);
+
+  void endEditMaster(List<ReorderListItem<int>> result) {
+    _dlc.endEditMaster(result);
+    _model.submit(ViewConfigUpdate(_dlc.makeConfig()));
+    //writeConfig(_dlc.makeConfig()).then((_) => parent.setDevState(this));
+  }
+
+  void refreshDLC({bool rebuildHint = true}) {
+    if (_model.settings != null)
+      _dlc.applyDevices(_model._devState.devices, _model.settings!.visLevel, rebuildHint: rebuildHint);
+  }
+
+  DevView getDeviceView() {
+    return _dlc.isOnline ? DevViewFull(_dlc.list) : DevViewEmpty(_model._devState.error);
+  }
+}
+
+class MainModel extends Model with DevListControllerMixin implements NetworkListener {
+  L10nModel? _l10nModel;
   Settings? _settings;
   ViewConfig? _viewConfig;
   NioSender? _nioSender;
-  FetchConfig? _fetchConfig;
+  bool _isNetworkIoActive = false;
+  final AlertBuilder _alertBuilder  = AlertBuilder(
+      failedFilterId: DevListController.getViewId(AppView.Failed),
+      batteryFilterId: DevListController.getViewId(AppView.Battery),
+      temperatureFilterId: DevListController.getViewId(AppView.Temperature)
+  );
+  int _commandN = 0;
 
-  bool _networkIoActive = false;
+  DevState _devState = DevState.initial();
 
-  MainModel() {
-    nvc = NVController(this);
-  }
+  void Function(Popup popup) popupFn = (p) => print("default popup fn invoked on ${p}");
+
+  MainModel get _model => this;
+  List<Alert> get alerts => _alertBuilder.alertList;
 
   static MainModel of(BuildContext context, {rebuildOnChange = false}) =>
       ScopedModel.of<MainModel>(context, rebuildOnChange: rebuildOnChange);
@@ -50,90 +96,150 @@ class MainModel extends Model implements NetworkListener {
 
   Settings? get settings => _settings;
   ViewConfig? get viewConfig => _viewConfig;
-  FetchConfig? get fetchConfig => _fetchConfig;
+  bool get isNetworkIoActive => _isNetworkIoActive;
+
+  void showPopup(Popup popup) => popupFn(popup);
 
   NV? getNVbyLink(DeviceLink link, L10ns l10ns) {
-    final device = devState!.getDeviceByLink(link);
-    return (device != null) ? nvc!.getNV(device, l10ns) : null;
+    final device = _devState.getDeviceByLink(link);
+    return (device != null) ? getNV(device, l10ns) : null;
   }
 
-  void setDevState(DevState newDevState) {
-    if (devState != newDevState && devState != null) devState!.cleanup();
-    devState = newDevState;
-    notifyListeners();
+  void exec(Command cmd, [String? title]) {
+    _nioSender?.submit(ExecCommand(_commandN, cmd.c0, cmd.c1, cmd.c2, title: title));
+    _commandN += 1;
   }
 
-  void reload() {
-    setDevState(DevStateEmpty.init(this));
+  void execCond(Command? cmd, [String? title]) {
+    if (cmd != null) exec(cmd, title);
+  }
+
+  void reloadDevices() {
+    _nioSender?.submit(Reload());
+  }
+
+  void handleEvent(DevStateEvent event) {
+    final (devState, action) = _devState.handleEvent(event);
+    _devState = devState;
+    switch (action) {
+      case null:
+        break;
+      case ErrorPopup(error: final error):
+        showPopup(CommErrorPopup(error));
+        break;
+    }
   }
 
   void onNetworkEvent(NetworkIndication ind) {
     print("main thread received ni: ${ind}");
     switch (ind) {
-      case FetchStart(isFull: final isFull):
-        _networkIoActive = true;
-        //devState?.isLoading = true;
+      case FetchStart(/*isFull: final isFull*/):
+        _isNetworkIoActive = true;
         break;
       case FetchResult(isFull: final isFull, devices: final devices, error: final error):
-        _networkIoActive = false;
+        _isNetworkIoActive = false;
+        if (devices != null) {
+          handleEvent(DevicesUpdate(isFull, devices));
+          if (_settings !=null)
+            _alertBuilder.processDevices(_devState.devices, _model.settings!);
+          refreshDLC(rebuildHint: devices.structureChanged ?? false);
+        } else if (error != null) {
+          handleEvent(DevicesUpdateError(error));
+          refreshDLC(rebuildHint: true);
+          showPopup(CommErrorPopup(error));
+        }
         break;
-      case CommandStart(id: final id):
-        _networkIoActive = true;
+      case CommandStart(id: final id, title: final title):
+        _isNetworkIoActive = true;
+        showPopup(GenericPopup("Executing command[#${id}] ${title ?? ''}"));
         break;
       case CommandResult(id: final id, error: final error):
-        _networkIoActive = false;
+        _isNetworkIoActive = false;
+        if (error != null) showPopup(GenericPopup("command[#${id}] error: ${error}"));
         break;
     }
     notifyListeners();
   }
 
-  void init(L10nModel l10nModel) {
-    _nioSender = startNio(this);
-    reload();
-    Future.microtask(() async {
-      _settings = await readSettings();
-      _fetchConfig = FetchConfig(url: _settings!.url,
-          username: _settings!.username,
-          password: _settings!.password
-      );
-      _nioSender!.submit(Configure(NioConfig(
-          fetchConfig: _fetchConfig!,
-          intervalMainS: _settings!.intervalMainS,
-          intervalUpdateS: _settings!.intervalUpdateS,
-          intervalErrorRetryS: _settings!.intervalErrorRetryS
-      )));
-      _viewConfig = await readViewConfig();
-      l10nModel.setLocale(_settings!.localeCode);
-      reload();
-    });
+  void onSettingsAvailable(Settings settings) {
+    _settings = settings;
+    _l10nModel?.setLocale(settings.localeCode);
+    final fetchConfig = FetchConfig(url: _settings!.url,
+        username: settings.username,
+        password: settings.password
+    );
+    _nioSender!.submit(Configure(NioConfig(
+        fetchConfig: fetchConfig,
+        intervalMainS: settings.intervalMainS,
+        intervalUpdateS: settings.intervalUpdateS,
+        intervalErrorRetryS: settings.intervalErrorRetryS
+    )));
   }
 
-  void submit(dynamic event) {
+  void onViewConfigAvailable(ViewConfig viewConfig) {
+    _viewConfig = viewConfig;
+    _dlc.parseConfig(viewConfig);
+  }
+
+  void onInitializationError(AppError error) {
+    print("InitializationError: ${error}");
+    showPopup(CommErrorPopup(error));
+  }
+
+  void onAppError(AppError error) {
+    print("AppError: ${error}");
+    showPopup(CommErrorPopup(error));
+  }
+
+  void init(L10nModel l10nModel) {
+
+    _nioSender = startNio(this);
+    _l10nModel = l10nModel;
+
+    Future.microtask(() async {
+      try {
+        onSettingsAvailable(await readSettings());
+        onViewConfigAvailable(await readViewConfig());
+        notifyListeners();
+        print("init complete");
+      } catch(err) {
+        onInitializationError(AppError.convert(err));
+      }
+    });
+
+  }
+
+  void submit(ModelEvent event) {
     print("submit $event");
-    if (event == CommonModelEvents.AppPaused) {
-      _nioSender?.submit(Pause());
-      setDevState(DevStateEmpty(devState!, error: AppError.appPaused()));
-    } else if (event == CommonModelEvents.AppResumed) {
-      _nioSender?.submit(Resume());
-      setDevState(DevStateEmpty.init(this));
-    } else if (event == CommonModelEvents.RemoteReloadRequest) {
-      if (devState != null) devState!.flagNeedsUpdate();
-    } else if (event == CommonModelEvents.UpdateUI) {
-      notifyListeners();
-    } else if (event == CommonModelEvents.Reload) {
-      reload();
-    } else if (event is DevState) {
-      setDevState(event);
-    } else if (event is ViewConfigUpdate) {
-      _viewConfig = event.viewConfig;
-      Future.microtask(() async { await writeViewConfig(event.viewConfig); });
-      notifyListeners();
-    } else if (event is Settings) {
-      _settings = event;
-      Future.microtask(() async { await writeSettings(event); });
-      reload();
-    } else {
-      print("WARNING: Unhandled event: $event");
+    switch (event) {
+      case AppPaused():
+        _nioSender?.submit(Pause());
+        break;
+      case AppResumed():
+        _nioSender?.submit(Resume());
+        break;
+      case ViewConfigUpdate(viewConfig: final viewConfig):
+        onViewConfigAvailable(viewConfig);
+        notifyListeners();
+        Future.microtask(() async {
+          try {
+            await writeViewConfig(viewConfig);
+          } catch(err) {
+            onAppError(AppError.convert(err));
+          }
+        });
+        break;
+      case SettingsUpdate(settings: final settings):
+        onSettingsAvailable(settings);
+        notifyListeners();
+        Future.microtask(() async {
+          try {
+            await writeSettings(settings);
+          } catch(err) {
+            onAppError(AppError.convert(err));
+          }
+        });
+        break;
     }
   }
 }

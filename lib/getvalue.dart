@@ -76,13 +76,12 @@ class GetThermostatSetPointState extends State<GetThermostatSetPoint> {
 
 class GetSwitchMultilevel extends StatefulWidget {
   final NVSwitchMultilevel _nv;
-  final ErrorF _errorF;
 
-  GetSwitchMultilevel(this._nv, this._errorF);
+  GetSwitchMultilevel(this._nv);
 
   @override
   State<StatefulWidget> createState() {
-    return GetSwitchMultilevelState(_nv, _errorF);
+    return GetSwitchMultilevelState(_nv);
   }
 }
 
@@ -90,10 +89,9 @@ class GetSwitchMultilevel extends StatefulWidget {
 class GetSwitchMultilevelState extends State<GetSwitchMultilevel> {
 
   final DeviceLink _devLink;
-  final ErrorF _errorF;
   int? _value;
 
-  GetSwitchMultilevelState(NVSwitchMultilevel nv, this._errorF):
+  GetSwitchMultilevelState(NVSwitchMultilevel nv):
     _devLink = nv.getLink(),
     _value = nv.value;
 
@@ -143,32 +141,32 @@ class GetSwitchMultilevelState extends State<GetSwitchMultilevel> {
                     IconButton(
                         icon: Icon(Icons.check_circle),
                         tooltip: myLoc.goToPosition,
-                        onPressed: () => nv.onSetLevel(_value!, _errorF)
+                        onPressed: () => model.exec(nv.setLevelCmd(_value!))
                     ),
                     IconButton(
                         icon: Icon(Icons.arrow_drop_up),
                         tooltip: myLoc.increase,
-                        onPressed: () => nv.onIncrease(_errorF)
+                        onPressed: () => model.exec(nv.increaseCmd())
                     ),
                     IconButton(
                         icon: Icon(Icons.arrow_upward),
                         tooltip: myLoc.startUp,
-                        onPressed: () => nv.onStartUp(_errorF)
+                        onPressed: () => model.exec(nv.startUpCmd())
                     ),
                     IconButton(
                         icon: Icon(Icons.stop),
                         tooltip: myLoc.stop,
-                        onPressed: () => nv.onStop(_errorF)
+                        onPressed: () => model.exec(nv.stopCmd())
                     ),
                     IconButton(
                         icon: Icon(Icons.arrow_downward),
                         tooltip: myLoc.startDown,
-                        onPressed: () => nv.onStartDown(_errorF)
+                        onPressed: () => model.exec(nv.startDownCmd())
                     ),
                     IconButton(
                         icon: Icon(Icons.arrow_drop_down),
                         tooltip: myLoc.decrease,
-                        onPressed: () => nv.onDecrease(_errorF)
+                        onPressed: () => model.exec(nv.decreaseCmd())
                     ),
                   ]
                 )

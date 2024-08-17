@@ -29,11 +29,13 @@ class ViewConfig {
 }
 
 Future<ViewConfig> readViewConfig() async {
+  print("readViewConfig");
   SharedPreferences prefs = await SharedPreferences.getInstance();
   return ViewConfig(prefs.getStringList(k_config));
 }
 
 Future<void> writeViewConfig(ViewConfig viewConfig) async {
+  print("writeViewConfig");
   SharedPreferences prefs = await SharedPreferences.getInstance();
   prefs.setStringList(k_config, viewConfig.views!);
 }
@@ -272,7 +274,7 @@ class PreferencesState extends State<Preferences> {
                     DropdownMenuItem<OverriddenLocaleCode>(value: OverriddenLocaleCode.RU, child: Text(myLoc.russian)),
                   ],
                       value: _localeCode,
-                      onChanged: (value) => setState(() { if (value != null) _localeCode = value as OverriddenLocaleCode; })
+                      onChanged: (value) => setState(() { if (value != null) _localeCode = value; })
                   ),
                   if (_masterEditor != null || _viewEditor != null) ...(
                       <Widget>[
@@ -295,7 +297,7 @@ class PreferencesState extends State<Preferences> {
                     DropdownMenuItem<VisLevel>(value: VisLevel.All, child: Text(myLoc.visAll)),
                   ],
                       value:  _visLevel,
-                      onChanged: (value) => { if (value != null) setState(() { _visLevel = value as VisLevel; }) }
+                      onChanged: (value) => { if (value != null) setState(() { _visLevel = value; }) }
                   ),
                   Text(myLoc.updateIntervalSeconds),
                   TextFormField(

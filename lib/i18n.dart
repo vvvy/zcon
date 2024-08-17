@@ -220,13 +220,13 @@ class L10ns {
   //String Function(String) get error => _error[_offset];
   //String Function(String) get errorNL => _localizedValuesFSS['errorNL'][_offset];
 
-  String Function(PopupType type, dynamic detail) get popup => (type, detail) {
-    switch(type) {
-      case PopupType.CommErrorTransient:
-        return _errorString(_localizedValuesFSS['commErrorTransient']![_offset], detail as AppError);
-      default:
-        print("ERROR: Unhandled PopupType in L10ns: $type");
-        return "[$type]";
+  String Function(Popup popup) get popup => (popup) {
+    switch(popup) {
+      case CommErrorPopup(error: final error): //PopupType.CommErrorTransient:
+        return _errorString(_localizedValuesFSS['commErrorTransient']![_offset], error);
+
+      case GenericPopup(text: final text):
+        return text;
     }
   };
 

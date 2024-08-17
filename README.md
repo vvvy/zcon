@@ -11,6 +11,12 @@ Mobile front end for Z-Way controller
 5. In the directory where this README resides, run
 
 ```bash
+flutter build apk
+```
+
+Or, for distinct APK per architecture:
+
+```bash
 flutter build apk --target-platform android-arm,android-arm64,android-x64 --split-per-abi
 ```
 

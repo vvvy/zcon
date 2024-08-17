@@ -51,7 +51,7 @@ class DevListIndex extends DevList {
         _pos = pos;
 }
 
-abstract class DevListType {
+sealed class DevListType {
   DevList getList(List<Device> devices, {bool rebuildHint});
 }
 
@@ -344,19 +344,41 @@ class DevListController extends AbstractDevListController {
     }
   }
 
+  /// the returned list is built of two separated parts:
+  ///
+  /// 1. all identifiable items currently shown (preserving the order)
+  /// 2. all identifiable items currently hidden, in same order as in master Devices
   @override
-  List<ReorderListItem<String>?>? startEditList() {
+  List<ReorderListItem<String>> startEditList() {
+    final devices = _devices!;
     final t = _types[_current];
-    if (t is DevListTypeIdList) {
-      final ids = t.getIds();
+    switch (t) {
+      case DevListTypeIdList():
+      //device ids currently shown
+        final ids = t.getIds();
 
-      final names = Map.fromEntries(_devices!.map((dev) => MapEntry(dev.id!, dev.metrics?.title ?? dev.id!)));
-      final l0 = ids.map((id) => names.containsKey(id) ? ReorderListItem(id, names.remove(id)!) : null).toList();
-      final l1 = names.entries.map((me) => ReorderListItem(me.key, me.value)).toList();
-      return l0 + [ReorderListItem.sep()] + l1;
+        //id -> title for all devices having ids (identifiable)
+        final titles = Map.fromEntries(devices
+            .where((d) => d.id != null)
+            .map((d) => MapEntry(d.id!, d.metrics?.title ?? d.id!))
+        );
+
+        final l_shown = ids
+            .where(titles.containsKey)
+            .map((id) => ReorderListItem(id, titles[id]!))
+            .toList();
+        ids.forEach(titles.remove);
+        final l_hidden = devices
+            .map((d) => d.id)
+            .where(titles.containsKey)
+            .map((id) => ReorderListItem(id!, titles[id]!))
+            .toList();
+        return l_shown + [ReorderListItem.sep()] + l_hidden;
+      case DevListTypeIdentity():
+        throw "editing DevListTypeIdentity not supported";
+      case DevListTypeIndex():
+        throw "editing DevListTypeIndex not supported";
     }
-    else
-      return null;
   }
 
   @override

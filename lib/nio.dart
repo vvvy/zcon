@@ -27,14 +27,16 @@ class Configure implements NetworkRequest {
 
 class ExecCommand implements NetworkRequest {
   int id;
+  String? title;
   String c0;
   String c1;
   String c2;
-  ExecCommand(this.id, this.c0, this.c1, this.c2);
+  ExecCommand(this.id, this.c0, this.c1, this.c2, {this.title});
 }
 
 class Pause implements NetworkRequest { }
 class Resume implements NetworkRequest { }
+class Reload implements NetworkRequest { }
 
 sealed class NetworkIndication { }
 
@@ -52,13 +54,15 @@ class FetchResult implements NetworkIndication {
 
 class CommandStart implements NetworkIndication {
   int id;
-  CommandStart({required this.id});
+  String? title;
+  CommandStart({required this.id, this.title});
 }
 
 class CommandResult implements NetworkIndication {
   int id;
+  String? title;
   AppError? error;
-  CommandResult({required this.id, this.error});
+  CommandResult({required this.id, this.title, this.error});
 }
 
 
@@ -111,16 +115,16 @@ class Nio {
       print("no config, bypassing exec");
       return;
     }
-    final ExecCommand(id: id, c0: c0, c1: c1, c2: c2) = c;
-    _output.send(CommandStart(id: id));
+    final ExecCommand(id: id, c0: c0, c1: c1, c2: c2, title: title) = c;
+    _output.send(CommandStart(id: id, title: title));
     print("starting exec[$id] $c0/$c1/$c2");
     try {
       final _ = await fetch<Null>("$c0/$c1/$c2", _config!.fetchConfig);
       print("exec[$id] success");
-      _output.send(CommandResult(id: id));
+      _output.send(CommandResult(id: id, title: title));
     } catch (err) {
       print("exec[$id] failed, err=${err}");
-      _output.send(CommandResult(id: id, error: AppError.convert(err)));
+      _output.send(CommandResult(id: id, title: title, error: AppError.convert(err)));
     }
   }
 
@@ -136,6 +140,7 @@ class Nio {
     print("starting fetch, updateTime = ${_updateTime}");
     try {
       final ds = await fetch<Devices>(uri, _config!.fetchConfig);
+      _updateTime = ds.updateTime ?? 0;
       print("Fetch success, count=${ds.devices?.length}");
       _output.send(FetchResult(isFull: isFull, devices: ds));
     } catch(err) {
@@ -171,7 +176,8 @@ class Nio {
     await for (final r in _input) {
       print("received: ${r}");
 
-      switch (r) {
+
+      switch (r as NetworkRequest) {
         case Configure(config: final c):
           _config = c;
           _updateTime = 0;
@@ -179,8 +185,14 @@ class Nio {
           schedule(false);
           break;
 
+        case Reload():
+          _updateTime = 0;
+          await fetchDevices();
+          schedule(false);
+          break;
+
         case ExecCommand():
-          await execCommand(r);
+          await execCommand(r as ExecCommand);
           schedule(true);
           break;
 

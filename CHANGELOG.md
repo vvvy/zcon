@@ -11,6 +11,11 @@
 * Add FCM support (compatible with ZWay)
 * Add Status to Drawer (?)
 
+## Version 1.1.0+9
+
+* Migrate to Flutter 3.24.0/Dart 3.5
+* Move network i/o to Isolate
+
 ## Version 1.0.6+8
 
 * Alarm and color indicator thresholds editable via Settings
