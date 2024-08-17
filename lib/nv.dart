@@ -36,7 +36,7 @@ class NVPushButton extends NV {
   static NV fromDev(Device d, L10ns _l10ns) => NVPushButton(d.id!);
 }
 
-class NVThermostatSetPoint extends NV {
+class NVThermostatSetPoint extends NVUpdate {
   final double? value;
   final String title;
   Command setCmd(double newV) => Command(_devId, "command", "exact?level=$newV");

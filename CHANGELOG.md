@@ -15,6 +15,7 @@
 
 * Migrate to Flutter 3.24.0/Dart 3.5
 * Move network i/o to Isolate
+* Make Thermostat Setpoint updatable
 
 ## Version 1.0.6+8
 
